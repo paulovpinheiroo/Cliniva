@@ -48,6 +48,11 @@ em backend (Java/Spring Boot) e frontend (React).
 - [ ] Deploy backend + banco na nuvem
 - [ ] PWA / instalação em home screen
 
+## Ideias futuras (fora do escopo do MVP)
+
+- Integração com IA (a definir o caso de uso específico —
+  sugestão de horários, previsão de estoque, resumo do dia, etc.)
+
 ## Modelagem
 
 ![alt text](EDR.png)
