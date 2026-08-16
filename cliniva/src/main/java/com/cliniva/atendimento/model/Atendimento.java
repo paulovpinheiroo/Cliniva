@@ -1,4 +1,4 @@
-package com.cliniva.atendimento;
+package com.cliniva.atendimento.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

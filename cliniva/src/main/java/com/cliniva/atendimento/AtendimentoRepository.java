@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.time.LocalDateTime;
 import com.cliniva.atendimento.enums.StatusAtendimento;
+import com.cliniva.atendimento.model.Atendimento;
 
 public interface AtendimentoRepository extends JpaRepository<Atendimento, UUID> {
 
