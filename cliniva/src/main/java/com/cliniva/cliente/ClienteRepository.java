@@ -10,7 +10,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
 
     Optional<Cliente> findByTelefone(String telefone);
 
-    Boolean existsByEmail(String email);
+    boolean existsByEmail(String email);
 
-    Boolean existsByTelefone(String telefone);
+    boolean existsByTelefone(String telefone);
 }
