@@ -9,17 +9,18 @@ import java.util.UUID;
 import com.cliniva.atendimento.enums.StatusAtendimento;
 
 public record CreateAtendimentoResponseDTO(
-        UUID atendimentoId,
+        UUID id,
         UUID clienteId,
         LocalDateTime dataAtendimento,
         LocalDate dataCriacao,
-        List<ServicoSelecionadoDTO> servico,
-        StatusAtendimento status) {
-    public record ServicoSelecionadoDTO(
-            UUID servicoId,
-            List<ItemUsadoDTO> itensExtras) {
-        public record ItemUsadoDTO(UUID itemId, BigDecimal quantidade) {
+        StatusAtendimento status,
+        List<ServicoRealizadoDTO> servicos) {
 
+    public record ServicoRealizadoDTO(
+            UUID servicoId,
+            BigDecimal valorCobrado,
+            List<ItemUsadoRealDTO> itensExtras) {
+        public record ItemUsadoRealDTO(UUID itemId, BigDecimal quantidadeUsada) {
         }
     }
 }
