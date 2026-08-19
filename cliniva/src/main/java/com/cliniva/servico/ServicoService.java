@@ -2,6 +2,7 @@ package com.cliniva.servico;
 
 import org.springframework.stereotype.Service;
 
+import com.cliniva.exception.RecursoNaoEncontradoException;
 import com.cliniva.servico.dtos.CreateServicoRequestDTO;
 import com.cliniva.servico.dtos.CreateServicoResponseDTO;
 
@@ -14,7 +15,7 @@ public class ServicoService {
 
     public CreateServicoResponseDTO createServico(CreateServicoRequestDTO requestDTO) {
         if (servicoRepository.existsByNome(requestDTO.nome())) {
-            throw new IllegalArgumentException("Serviço com nome já existe");
+            throw new RecursoNaoEncontradoException("Serviço com nome já existe");
         }
         Servico servico = new Servico();
         servico.setNome(requestDTO.nome());

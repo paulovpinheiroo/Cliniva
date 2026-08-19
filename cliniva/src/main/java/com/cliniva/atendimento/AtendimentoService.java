@@ -22,6 +22,8 @@ import com.cliniva.atendimento.repository.AtendimentoRepository;
 import com.cliniva.atendimento.repository.AtendimentoServicoRepository;
 import com.cliniva.cliente.Cliente;
 import com.cliniva.cliente.ClienteRepository;
+import com.cliniva.exception.RecursoDuplicadoException;
+import com.cliniva.exception.RecursoNaoEncontradoException;
 import com.cliniva.item.Item;
 import com.cliniva.item.ItemRepository;
 import com.cliniva.servico.Servico;
@@ -43,7 +45,7 @@ public class AtendimentoService {
     @Transactional
     public CreateAtendimentoResponseDTO createAtendimento(CreateAtendimentoRequestDTO requestDTO) {
         Cliente cliente = clienteRepository.findById(requestDTO.clienteId())
-                .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
 
         Atendimento atendimento = new Atendimento();
         atendimento.setCliente(cliente);
@@ -55,10 +57,10 @@ public class AtendimentoService {
 
         for (ServicoSelecionadoDTO servicoSelecionado : requestDTO.servicos()) {
             Servico servicoEncontrado = servicoRepository.findById(servicoSelecionado.servicoId())
-                    .orElseThrow(() -> new IllegalArgumentException("Serviço não encontrado"));
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Serviço não encontrado"));
 
             if (atendimentoServicoRepository.existsByAtendimentoAndServico(atendimento, servicoEncontrado)) {
-                throw new IllegalArgumentException("Serviço já adicionado a este atendimento.");
+                throw new RecursoDuplicadoException("Serviço já adicionado a este atendimento.");
             }
 
             AtendimentoServico atendimentoServico = new AtendimentoServico();
@@ -71,7 +73,7 @@ public class AtendimentoService {
 
             for (ItemUsadoDTO itemUsadoDTO : servicoSelecionado.itensExtras()) {
                 Item itemEncontrado = itemRepository.findById(itemUsadoDTO.itemId())
-                        .orElseThrow(() -> new IllegalArgumentException("Item não encontrado"));
+                        .orElseThrow(() -> new RecursoNaoEncontradoException("Item não encontrado"));
 
                 BigDecimal quantidadeNova = itemUsadoDTO.quantidade();
 

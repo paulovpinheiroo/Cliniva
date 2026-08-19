@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.cliniva.cliente.dtos.CreateClienteRequestDTO;
 import com.cliniva.cliente.dtos.CreateClienteResponseDTO;
+import com.cliniva.exception.RecursoDuplicadoException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -15,10 +16,10 @@ public class ClienteService {
 
     public CreateClienteResponseDTO createCliente(CreateClienteRequestDTO createClienteDTO) {
         if (clienteRepository.existsByEmail(createClienteDTO.email())) {
-            throw new IllegalArgumentException("Email já cadastrado");
+            throw new RecursoDuplicadoException("Email já cadastrado");
         }
         if (clienteRepository.existsByTelefone(createClienteDTO.telefone())) {
-            throw new IllegalArgumentException("Telefone já cadastrado");
+            throw new RecursoDuplicadoException("Telefone já cadastrado");
         }
 
         Cliente cliente = new Cliente();
