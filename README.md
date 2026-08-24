@@ -26,12 +26,14 @@ em backend (Java/Spring Boot) e frontend (React).
 - [x] Modelagem de entidades (ERD)
 - [x] Setup do projeto (Spring Initializr, Postgres)
 - [x] Domínio Cliente (entity, repository, service, controller)
-- [ ] Domínio Serviço
-- [ ] Domínio Item (estoque)
-- [ ] Domínio Atendimento
-- [ ] AtendimentoServico / AtendimentoItem
-- [ ] Validações (Bean Validation)
-- [ ] Tratamento global de exceptions
+- [x] Domínio Serviço
+- [x] Domínio Item (estoque)
+- [x] Domínio Atendimento
+- [x] AtendimentoServico / AtendimentoItem
+- [x] Endpoints de leitura (listagem, busca por id, filtros por query param)
+- [x] Validações (Bean Validation)
+- [x] Tratamento global de exceptions
+- [x] CRUD completo (update/delete) e mudança de status do Atendimento
 - [ ] Testes unitários
 
 ### MVP Frontend
