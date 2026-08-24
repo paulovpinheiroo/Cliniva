@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.cliniva.atendimento.enums.StatusAtendimento;
 import com.cliniva.cliente.Cliente;
+import com.cliniva.exception.TransicaoStatusInvalidaException;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -45,5 +46,13 @@ public class Atendimento {
     @PrePersist
     public void prePersist() {
         this.dataCriacao = LocalDate.now();
+    }
+
+    public void setStatus(StatusAtendimento status) {
+        if (this.status != null && this.status == StatusAtendimento.CANCELADO) {
+            throw new TransicaoStatusInvalidaException(
+                    "Atendimento cancelado não pode mais ser alterado");
+        }
+        this.status = status;
     }
 }
