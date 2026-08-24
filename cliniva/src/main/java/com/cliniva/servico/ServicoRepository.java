@@ -10,4 +10,5 @@ public interface ServicoRepository extends JpaRepository<Servico, UUID> {
 
     boolean existsByNome(String nome);
 
+    boolean existsByNomeAndIdNot(String nome, UUID id);
 }
