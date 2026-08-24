@@ -10,4 +10,5 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
 
     Optional<Item> findByNome(String nome);
 
+    boolean existsByNomeAndIdNot(String nome, UUID id);
 }
