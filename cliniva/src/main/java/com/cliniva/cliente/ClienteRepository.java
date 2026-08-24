@@ -1,5 +1,6 @@
 package com.cliniva.cliente;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,4 +14,10 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
     boolean existsByEmail(String email);
 
     boolean existsByTelefone(String telefone);
+
+    List<Cliente> findByNomeContainingIgnoreCase(String nome);
+
+    boolean existsByEmailAndIdNot(String email, UUID id);
+
+    boolean existsByTelefoneAndIdNot(String telefone, UUID id);
 }
