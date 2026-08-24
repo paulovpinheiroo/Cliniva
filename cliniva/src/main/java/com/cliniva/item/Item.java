@@ -3,6 +3,8 @@ package com.cliniva.item;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import com.cliniva.exception.EstoqueInsuficienteException;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,8 +39,13 @@ public class Item {
     }
 
     public void removerQuantidade(BigDecimal quantidade) {
+        if (quantidade.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Quantidade a remover deve ser positiva");
+        }
         if (this.quantidadeEmEstoque.compareTo(quantidade) < 0) {
-            throw new IllegalStateException("Estoque insuficiente");
+            throw new EstoqueInsuficienteException(
+                    "Estoque insuficiente para '" + nome + "': disponível " + quantidadeEmEstoque + ", solicitado "
+                            + quantidade);
         }
         this.quantidadeEmEstoque = this.quantidadeEmEstoque.subtract(quantidade);
     }
