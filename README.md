@@ -34,7 +34,7 @@ em backend (Java/Spring Boot) e frontend (React).
 - [x] Validações (Bean Validation)
 - [x] Tratamento global de exceptions
 - [x] CRUD completo (update/delete) e mudança de status do Atendimento
-- [ ] Testes unitários
+- [x] Testes unitários
 
 ### MVP Frontend
 
