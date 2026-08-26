@@ -9,19 +9,29 @@ Desenvolvido para resolver um problema real (sistema de gestão
 acessível pra pequenos negócios) e como projeto de evolução técnica
 em backend (Java/Spring Boot) e frontend (React).
 
+## Estrutura do repositório
+
+```
+cliniva/
+├── backend/       Java / Spring Boot / PostgreSQL / Maven
+├── frontend/      React + TypeScript (em desenvolvimento)
+├── README.md
+└── EDR.png        Diagrama de entidade-relacionamento
+```
+
 ## Stack
 
-- **Backend:** Java, Spring Boot, PostgreSQL, Maven
-- **Frontend:** React (planejado)
+- **Backend:** Java 21, Spring Boot 4.1, PostgreSQL, Maven
+- **Frontend:** React, TypeScript, Vite (planejado)
 - **Deploy:** Cloud gratuita (a definir — Render/Railway/Fly.io)
 
 ## Status
 
-🚧 Em desenvolvimento — `MVP Backend em andamento`
+🚧 Em desenvolvimento — `MVP Backend concluído · MVP Frontend iniciando`
 
 ## Roadmap
 
-### MVP Backend
+### MVP Backend ✅
 
 - [x] Modelagem de entidades (ERD)
 - [x] Setup do projeto (Spring Initializr, Postgres)
@@ -34,7 +44,7 @@ em backend (Java/Spring Boot) e frontend (React).
 - [x] Validações (Bean Validation)
 - [x] Tratamento global de exceptions
 - [x] CRUD completo (update/delete) e mudança de status do Atendimento
-- [x] Testes unitários
+- [x] Testes unitários (59 testes, suite verde)
 
 ### MVP Frontend
 
