@@ -243,6 +243,7 @@ public class AtendimentoService {
                                 itensUsados);
         }
 
+        @SuppressWarnings("null")
         private BigDecimal calcularValorTotal(Atendimento atendimento) {
                 return atendimentoServicoRepository.findByAtendimento(atendimento).stream()
                                 .map(AtendimentoServico::getValorCobrado)
