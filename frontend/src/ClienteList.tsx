@@ -1,18 +1,23 @@
 interface Cliente {
-    id: number
-    nome: string
+    id: number;
+    nome: string;
 }
 interface ClienteListProps {
     clientes: Cliente[];
+    onRemover: (id: number) => void;
 }
-export default function ClienteList({ clientes }: ClienteListProps) {
-    if (!clientes || clientes.length === 0) {
-        return <p>Nenhum cliente encontrado.</p>;
-    }
+
+export default function ClienteList({ clientes, onRemover }: ClienteListProps) {
     return (
         <ul>
             {clientes.map((cliente) => (
-                <li key={cliente.id}>{cliente.nome}</li>
+                <li key={cliente.id} style={{ marginBottom: "8px" }}>
+                    {cliente.nome} {" "}
+                    {/* O onClick chama uma função anônima que executa o onRemover passando o ID */}
+                    <button onClick={() => onRemover(cliente.id)}>
+                        Remover
+                    </button>
+                </li>
             ))}
         </ul>
     );
