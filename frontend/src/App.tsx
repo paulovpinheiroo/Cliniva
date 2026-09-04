@@ -1,29 +1,24 @@
-import { useState } from "react";
-import ClienteList from "./ClienteList"
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { AtendimentosPage } from '@/pages/AtendimentosPage'
+import { ClientesPage } from '@/pages/ClientesPage'
+import { DashboardPage } from '@/pages/DashboardPage'
+import { EstoquePage } from '@/pages/EstoquePage'
+import { ServicosPage } from '@/pages/ServicosPage'
+
 function App() {
-
-  const [cliente, setCliente] = useState([
-    { id: 1, nome: "Maria Silva" },
-    { id: 2, nome: "João Souza" },
-    { id: 3, nome: "Ana Costa" }
-  ]);
-  const proximoId = cliente.length > 0 ? Math.max(...cliente.map(c => c.id)) + 1 : 1;
-  const adicionarCliente = () => {
-    const novoCliente = { id: proximoId, nome: "Novo Cliente" };
-    setCliente([...cliente, novoCliente]);
-  };
-  const handleRemoverCliente = (idParaRemover: number) => {
-    const listaAtualizada = cliente.filter(cliente => cliente.id !== idParaRemover);
-    setCliente(listaAtualizada);
-  };
-
-
-  return <div style={{ padding: "20px" }}>
-    <h1>Cliniva</h1>
-    <section>
-      <ClienteList clientes={cliente} onRemover={handleRemoverCliente} />
-    </section>
-    <button onClick={adicionarCliente}>Adicionar Cliente</button>
-  </div>
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/clientes" element={<ClientesPage />} />
+        <Route path="/servicos" element={<ServicosPage />} />
+        <Route path="/estoque" element={<EstoquePage />} />
+        <Route path="/atendimentos" element={<AtendimentosPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  )
 }
+
 export default App
