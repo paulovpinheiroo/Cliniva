@@ -1,4 +1,12 @@
-body {
-  margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+@import "tailwindcss";
+
+@theme {
+  --color-sage: #8bae9a;
+  --color-sage-dark: #6f957f;
+  --color-lilac: #b58cff;
+  --color-purple: #66538c;
+  --color-darkpurple: #3f3752;
+  --color-carbon: #171a18;
+  --color-surface: #202420;
+  --color-borderline: #2e352f;
 }
