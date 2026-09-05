@@ -19,6 +19,12 @@ const MOVIMENTACAO_LABEL: Record<TipoMovimentacao, string> = {
   SAIDA: 'Saída',
 }
 
+function quantidadeClass(qtd: number): string {
+  if (qtd === 0) return 'text-red-700'
+  if (qtd < 5) return 'text-yellow-700'
+  return 'text-sage-dark'
+}
+
 export function EstoquePage() {
   const { data: itens, loading, error, refetch } = useApi(() => itensApi.listar())
 
@@ -114,6 +120,7 @@ export function EstoquePage() {
   return (
     <>
       <PageHeader
+        kicker="Insumos"
         title="Estoque"
         subtitle="Itens e materiais utilizados na clínica"
         action={<Button onClick={abrirCriar}>Novo item</Button>}
@@ -126,40 +133,38 @@ export function EstoquePage() {
       ) : !itens || itens.length === 0 ? (
         <EmptyState message="Nenhum item no estoque. Cadastre o primeiro com o botão acima." />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-borderline">
+        <div className="border-t border-hairline">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-borderline bg-surface text-left text-xs uppercase tracking-wide text-lilac">
-                <th className="px-4 py-3 font-medium">Item</th>
-                <th className="px-4 py-3 font-medium">Quantidade</th>
-                <th className="px-4 py-3 text-right font-medium">Ações</th>
+              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                <th className="py-3 pr-8 font-medium">Item</th>
+                <th className="py-3 pr-8 font-medium">Quantidade</th>
+                <th className="py-3 text-right font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {itens.map((item) => (
-                <tr key={item.id} className="border-b border-borderline/50 last:border-0">
-                  <td className="px-4 py-3 text-white">{item.nome}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={
-                        item.quantidadeEmEstoque === 0
-                          ? 'font-medium text-red-400'
-                          : item.quantidadeEmEstoque < 5
-                            ? 'font-medium text-yellow-400'
-                            : 'font-medium text-sage'
-                      }
-                    >
-                      {item.quantidadeEmEstoque}
-                    </span>
+                <tr
+                  key={item.id}
+                  className="border-t border-hairline transition-colors duration-150 ease-in-out hover:bg-paper"
+                >
+                  <td className="py-4 pr-8 font-medium text-ink">{item.nome}</td>
+                  <td className={`py-4 pr-8 font-mono text-[13px] ${quantidadeClass(item.quantidadeEmEstoque)}`}>
+                    {item.quantidadeEmEstoque}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="py-4 text-right whitespace-nowrap">
                     <Button variant="ghost" size="sm" onClick={() => abrirMovimentacao(item)}>
-                      Entrada/Saída
+                      Entrada / Saída
                     </Button>
-                    <Button variant="secondary" size="sm" onClick={() => abrirEditar(item)}>
+                    <Button variant="ghost" size="sm" className="ml-4" onClick={() => abrirEditar(item)}>
                       Editar
                     </Button>
-                    <Button variant="danger" size="sm" onClick={() => setDeletando(item)}>
+                    <Button
+                      variant="dangerText"
+                      size="sm"
+                      className="ml-4"
+                      onClick={() => setDeletando(item)}
+                    >
                       Excluir
                     </Button>
                   </td>
@@ -175,7 +180,7 @@ export function EstoquePage() {
         title={editando ? 'Editar item' : 'Novo item'}
         onClose={() => setModalAberto(false)}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <TextField
             label="Nome *"
             value={form.nome}
@@ -192,7 +197,7 @@ export function EstoquePage() {
               onChange={(e) => setForm({ ...form, quantidadeEmEstoque: Number(e.target.value) })}
             />
           )}
-          {formErro && <p className="text-sm text-red-400">{formErro}</p>}
+          {formErro && <p className="text-sm text-red-600">{formErro}</p>}
           <div className="mt-2 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setModalAberto(false)}>
               Cancelar
@@ -206,12 +211,15 @@ export function EstoquePage() {
 
       <Modal
         open={movimentando !== null}
-        title={`Movimentar estoque — ${movimentando?.nome ?? ''}`}
+        title={`Movimentar estoque`}
         onClose={() => setMovimentando(null)}
       >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-slate-400">
-            Quantidade atual: <span className="font-medium text-white">{movimentando?.quantidadeEmEstoque}</span>
+        <div className="flex flex-col gap-5">
+          <p className="text-sm text-ink">
+            Item: <span className="font-medium text-ink">{movimentando?.nome}</span>
+            <span className="mt-0.5 block font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+              Quantidade atual: {movimentando?.quantidadeEmEstoque}
+            </span>
           </p>
           <Select
             label="Tipo de movimentação"
@@ -229,7 +237,7 @@ export function EstoquePage() {
             value={movForm.quantidade}
             onChange={(e) => setMovForm({ ...movForm, quantidade: Number(e.target.value) })}
           />
-          {movErro && <p className="text-sm text-red-400">{movErro}</p>}
+          {movErro && <p className="text-sm text-red-600">{movErro}</p>}
           <div className="mt-2 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setMovimentando(null)}>
               Cancelar
