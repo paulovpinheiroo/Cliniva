@@ -1,12 +1,50 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340..670;1,9..144,340..670&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 @theme {
+  /* Paleta da marca */
   --color-sage: #8bae9a;
   --color-sage-dark: #6f957f;
   --color-lilac: #b58cff;
   --color-purple: #66538c;
   --color-darkpurple: #3f3752;
   --color-carbon: #171a18;
-  --color-surface: #202420;
-  --color-borderline: #2e352f;
+
+  /* Base editorial */
+  --color-ivory: #f7f2ea;
+  --color-paper: #fdfbf7;
+  --color-ink: #171a18;
+  --color-ink-soft: #6e6a61;
+  --color-hairline: #e2dbcc;
+
+  /* Tipografia */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Movimento rápido e sóbrio */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@layer base {
+  html {
+    scrollbar-color: var(--color-sage) var(--color-carbon);
+  }
+
+  body {
+    @apply bg-ivory font-sans text-ink antialiased;
+  }
+
+  ::selection {
+    background-color: var(--color-sage);
+    color: var(--color-carbon);
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    border-radius: 0;
+  }
 }
