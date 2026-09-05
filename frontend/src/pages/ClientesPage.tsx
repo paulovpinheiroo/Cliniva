@@ -83,6 +83,7 @@ export function ClientesPage() {
   return (
     <>
       <PageHeader
+        kicker="Cadastro"
         title="Clientes"
         subtitle="Cadastro e busca de clientes da clínica"
         action={<Button onClick={abrirCriar}>Novo cliente</Button>}
@@ -94,7 +95,7 @@ export function ClientesPage() {
         placeholder="Digite um nome de cliente..."
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
-        className="mb-4 max-w-xs"
+        className="mb-10 max-w-sm"
       />
 
       {error && <ErrorBanner message={error} />}
@@ -104,27 +105,35 @@ export function ClientesPage() {
       ) : !clientes || clientes.length === 0 ? (
         <EmptyState message="Nenhum cliente encontrado. Cadastre o primeiro com o botão acima." />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-borderline">
+        <div className="border-t border-hairline">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-borderline bg-surface text-left text-xs uppercase tracking-wide text-lilac">
-                <th className="px-4 py-3 font-medium">Nome</th>
-                <th className="px-4 py-3 font-medium">E-mail</th>
-                <th className="px-4 py-3 font-medium">Telefone</th>
-                <th className="px-4 py-3 text-right font-medium">Ações</th>
+              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                <th className="py-3 pr-8 font-medium">Nome</th>
+                <th className="py-3 pr-8 font-medium">E-mail</th>
+                <th className="py-3 pr-8 font-medium">Telefone</th>
+                <th className="py-3 text-right font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {clientes.map((cliente) => (
-                <tr key={cliente.id} className="border-b border-borderline/50 last:border-0">
-                  <td className="px-4 py-3 text-white">{cliente.nome}</td>
-                  <td className="px-4 py-3 text-slate-400">{cliente.email || '—'}</td>
-                  <td className="px-4 py-3 text-slate-300">{cliente.telefone}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="secondary" size="sm" onClick={() => abrirEditar(cliente)}>
+                <tr
+                  key={cliente.id}
+                  className="border-t border-hairline transition-colors duration-150 ease-in-out hover:bg-paper"
+                >
+                  <td className="py-4 pr-8 font-medium text-ink">{cliente.nome}</td>
+                  <td className="py-4 pr-8 text-ink-soft">{cliente.email || '—'}</td>
+                  <td className="py-4 pr-8 font-mono text-[13px] text-ink-soft">{cliente.telefone}</td>
+                  <td className="py-4 text-right whitespace-nowrap">
+                    <Button variant="ghost" size="sm" onClick={() => abrirEditar(cliente)}>
                       Editar
                     </Button>
-                    <Button variant="danger" size="sm" onClick={() => setDeletando(cliente)}>
+                    <Button
+                      variant="dangerText"
+                      size="sm"
+                      className="ml-4"
+                      onClick={() => setDeletando(cliente)}
+                    >
                       Excluir
                     </Button>
                   </td>
@@ -140,7 +149,7 @@ export function ClientesPage() {
         title={editando ? 'Editar cliente' : 'Novo cliente'}
         onClose={() => setModalAberto(false)}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <TextField
             label="Nome *"
             value={form.nome}
@@ -160,7 +169,7 @@ export function ClientesPage() {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="cliente@email.com"
           />
-          {formErro && <p className="text-sm text-red-400">{formErro}</p>}
+          {formErro && <p className="text-sm text-red-600">{formErro}</p>}
           <div className="mt-2 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setModalAberto(false)}>
               Cancelar

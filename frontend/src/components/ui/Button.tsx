@@ -16,6 +16,7 @@ const variants: Record<Variant, string> = {
   primary: 'bg-sage text-carbon hover:bg-sage-dark',
   secondary: 'border border-hairline text-ink hover:border-ink hover:bg-ink hover:text-ivory',
   danger: 'border border-red-700/40 text-red-700 hover:bg-red-700 hover:text-ivory',
+  dangerText: 'text-red-700 underline-offset-4 hover:text-red-900 hover:underline',
   ghost: 'text-ink-soft underline-offset-4 hover:text-ink hover:underline',
 }
 
