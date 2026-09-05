@@ -117,7 +117,7 @@ export function ServicosPage() {
                   <td className="max-w-md truncate py-4 pr-8 text-ink-soft">
                     {servico.descricao || '—'}
                   </td>
-                  <td className="py-4 pr-8 font-mono text-[13px] text-sage-dark">
+                  <td className="py-4 pr-8 font-mono text-[13px] text-accent-strong">
                     {formatMoeda(servico.valor)}
                   </td>
                   <td className="py-4 text-right whitespace-nowrap">

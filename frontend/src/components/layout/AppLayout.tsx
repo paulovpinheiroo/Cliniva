@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { useTheme } from '@/hooks/useTheme'
 
 const navItems = [
   { to: '/', label: 'Dashboard', end: true },
@@ -9,6 +10,7 @@ const navItems = [
 ]
 
 export function AppLayout() {
+  const { theme, toggleTheme } = useTheme()
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: '2-digit',
@@ -31,7 +33,7 @@ export function AppLayout() {
               end={item.end}
               className={({ isActive }) =>
                 `group relative flex items-center gap-4 py-2.5 pl-5 pr-3 text-[11px] font-medium uppercase tracking-[0.18em] transition-colors duration-150 ease-in-out ${
-                  isActive ? 'text-sage' : 'text-ivory/45 hover:text-ivory'
+                  isActive ? 'text-accent' : 'text-ivory/45 hover:text-ivory'
                 }`
               }
             >
@@ -39,12 +41,12 @@ export function AppLayout() {
                 <>
                   <span
                     className={`absolute inset-y-0 left-0 w-0.5 transition-colors duration-150 ease-in-out ${
-                      isActive ? 'bg-sage' : 'bg-transparent group-hover:bg-ivory/30'
+                      isActive ? 'bg-accent' : 'bg-transparent group-hover:bg-ivory/30'
                     }`}
                   />
                   <span
                     className={`font-mono text-[10px] tracking-[0.2em] transition-colors duration-150 ease-in-out ${
-                      isActive ? 'text-sage' : 'text-ivory/30 group-hover:text-ivory/50'
+                      isActive ? 'text-accent' : 'text-ivory/30 group-hover:text-ivory/50'
                     }`}
                   >
                     {String(index + 1).padStart(2, '0')}
@@ -72,7 +74,16 @@ export function AppLayout() {
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft">
             Cliniva — Sistema de gestão
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft">{today}</span>
+          <div className="flex items-center gap-6">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+              className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft underline-offset-4 transition-colors duration-150 ease-in-out hover:text-ink hover:underline"
+            >
+              [ {theme === 'dark' ? 'claro' : 'escuro'} ]
+            </button>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft">{today}</span>
+          </div>
         </header>
         <main className="flex-1 px-10 py-12">
           <div className="mx-auto w-full max-w-6xl">

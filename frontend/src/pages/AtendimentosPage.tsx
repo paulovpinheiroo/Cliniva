@@ -257,7 +257,7 @@ export function AtendimentosPage() {
                   <td className="py-4 pr-8">
                     <StatusBadge status={atendimento.status} />
                   </td>
-                  <td className="py-4 pr-8 font-mono text-[13px] text-sage-dark">
+                  <td className="py-4 pr-8 font-mono text-[13px] text-accent-strong">
                     {formatMoeda(atendimento.valorTotal)}
                   </td>
                   <td className="py-4 text-right whitespace-nowrap">

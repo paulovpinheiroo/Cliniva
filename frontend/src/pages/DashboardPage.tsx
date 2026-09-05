@@ -19,7 +19,7 @@ function StatCell({ label, value, to }: { label: string; value: number; to: stri
       className="group block px-6 py-6 transition-colors duration-150 ease-in-out hover:bg-paper"
     >
       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">{label}</p>
-      <p className="mt-2 font-display text-4xl font-medium text-ink transition-colors duration-150 ease-in-out group-hover:text-sage-dark">
+      <p className="mt-2 font-display text-4xl font-medium text-ink transition-colors duration-150 ease-in-out group-hover:text-accent-strong">
         {value}
       </p>
     </Link>
@@ -127,7 +127,7 @@ export function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-mono text-sm text-sage-dark">
+                      <span className="font-mono text-sm text-accent-strong">
                         {formatMoeda(atendimento.valorTotal)}
                       </span>
                       <StatusBadge status={atendimento.status} />

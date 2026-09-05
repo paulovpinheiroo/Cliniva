@@ -13,7 +13,7 @@ const base =
   'inline-flex cursor-pointer items-center justify-center gap-2 uppercase transition-colors duration-150 ease-in-out disabled:cursor-not-allowed disabled:opacity-40'
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-sage text-carbon hover:bg-sage-dark',
+  primary: 'bg-accent text-carbon hover:bg-accent-strong',
   secondary: 'border border-hairline text-ink hover:border-ink hover:bg-ink hover:text-ivory',
   danger: 'border border-red-700/40 text-red-700 hover:bg-red-700 hover:text-ivory',
   dangerText: 'text-red-700 underline-offset-4 hover:text-red-900 hover:underline',

@@ -12,7 +12,7 @@ export function TextField({ label, error, className = '', ...props }: TextFieldP
         {label}
       </span>
       <input
-        className={`w-full border-0 border-b border-hairline bg-transparent px-0 py-2 text-sm text-ink outline-none transition-colors duration-150 ease-in-out placeholder:text-ink-soft/50 hover:border-ink/50 focus:border-sage ${
+        className={`w-full border-0 border-b border-hairline bg-transparent px-0 py-2 text-sm text-ink outline-none transition-colors duration-150 ease-in-out placeholder:text-ink-soft/50 hover:border-ink/50 focus:border-accent ${
           error ? 'border-b-red-600' : ''
         } ${className}`}
         {...props}

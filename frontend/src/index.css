@@ -1,21 +1,36 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340..670;1,9..144,340..670&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --cli-ivory: #f7f2ea;
+  --cli-paper: #fdfbf7;
+  --cli-ink: #171a18;
+  --cli-ink-soft: #6e6a61;
+  --cli-hairline: #e2dbcc;
+  --cli-accent: #8bae9a;
+  --cli-accent-strong: #6f957f;
+}
+
+.dark {
+  --cli-ivory: #181b19;
+  --cli-paper: #202420;
+  --cli-ink: #f7f2ea;
+  --cli-ink-soft: #9aa298;
+  --cli-hairline: #2e352f;
+  --cli-accent: #b58cff;
+  --cli-accent-strong: #c8abff;
+}
+
 @theme {
-  /* Paleta da marca */
+  /* Paleta da marca (fixa — semântica) */
   --color-sage: #8bae9a;
   --color-sage-dark: #6f957f;
   --color-lilac: #b58cff;
   --color-purple: #66538c;
   --color-darkpurple: #3f3752;
   --color-carbon: #171a18;
-
-  /* Base editorial */
-  --color-ivory: #f7f2ea;
-  --color-paper: #fdfbf7;
-  --color-ink: #171a18;
-  --color-ink-soft: #6e6a61;
-  --color-hairline: #e2dbcc;
 
   /* Tipografia */
   --font-display: "Fraunces", Georgia, serif;
@@ -27,9 +42,22 @@
   --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+@theme inline {
+  /* Base editorial — trocável por tema */
+  --color-ivory: var(--cli-ivory);
+  --color-paper: var(--cli-paper);
+  --color-ink: var(--cli-ink);
+  --color-ink-soft: var(--cli-ink-soft);
+  --color-hairline: var(--cli-hairline);
+
+  /* Acento por modo — claro: sálvia · escuro: lilás */
+  --color-accent: var(--cli-accent);
+  --color-accent-strong: var(--cli-accent-strong);
+}
+
 @layer base {
   html {
-    scrollbar-color: var(--color-sage) var(--color-carbon);
+    scrollbar-color: var(--cli-accent) var(--cli-ink);
   }
 
   body {
@@ -37,8 +65,8 @@
   }
 
   ::selection {
-    background-color: var(--color-sage);
-    color: var(--color-carbon);
+    background-color: var(--cli-accent);
+    color: var(--cli-ink);
   }
 
   input,

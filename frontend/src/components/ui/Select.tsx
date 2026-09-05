@@ -12,7 +12,7 @@ export function Select({ label, children, className = '', ...props }: SelectProp
         {label}
       </span>
       <select
-        className={`w-full cursor-pointer border-0 border-b border-hairline bg-transparent px-0 py-2 text-sm text-ink outline-none transition-colors duration-150 ease-in-out hover:border-ink/50 focus:border-sage ${className}`}
+        className={`w-full cursor-pointer border-0 border-b border-hairline bg-transparent px-0 py-2 text-sm text-ink outline-none transition-colors duration-150 ease-in-out hover:border-ink/50 focus:border-accent ${className}`}
         {...props}
       >
         {children}

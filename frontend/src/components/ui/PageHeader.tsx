@@ -13,7 +13,7 @@ export function PageHeader({ title, subtitle, kicker, action }: PageHeaderProps)
       <div className="grid grid-cols-12 items-end gap-6">
         <div className="col-span-12 lg:col-span-8">
           {kicker && (
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-sage-dark">
+            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-accent-strong">
               {kicker}
             </p>
           )}
