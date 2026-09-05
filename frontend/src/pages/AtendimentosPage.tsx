@@ -40,6 +40,8 @@ function normalizeDatetimeLocal(value: string): string {
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) ? `${value}:00` : value
 }
 
+const microLabel = 'text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft'
+
 export function AtendimentosPage() {
   const { data: clientes, loading: loadingClientes } = useApi<Cliente[]>(() => clientesApi.listar())
   const { data: servicos, loading: loadingServicos } = useApi<Servico[]>(() => servicosApi.listar())
@@ -189,12 +191,13 @@ export function AtendimentosPage() {
   return (
     <>
       <PageHeader
+        kicker="Agenda"
         title="Atendimentos"
         subtitle="Agenda de procedimentos e mudança de status"
         action={<Button onClick={abrirCriar}>Novo atendimento</Button>}
       />
 
-      <div className="mb-5 grid grid-cols-1 gap-4 rounded-xl border border-borderline bg-surface p-4 md:grid-cols-4">
+      <div className="mb-10 grid grid-cols-1 gap-x-12 gap-y-6 border-b border-hairline pb-8 md:grid-cols-2 xl:grid-cols-4">
         <Select label="Status" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
           <option value="">Todos</option>
           <option value="AGENDADO">Agendado</option>
@@ -230,30 +233,37 @@ export function AtendimentosPage() {
       ) : !atendimentos || atendimentos.length === 0 ? (
         <EmptyState message="Nenhum atendimento encontrado para os filtros atuais." />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-borderline">
+        <div className="border-t border-hairline">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-borderline bg-surface text-left text-xs uppercase tracking-wide text-lilac">
-                <th className="px-4 py-3 font-medium">Cliente</th>
-                <th className="px-4 py-3 font-medium">Data</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 text-right font-medium">Ações</th>
+              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                <th className="py-3 pr-8 font-medium">Cliente</th>
+                <th className="py-3 pr-8 font-medium">Data</th>
+                <th className="py-3 pr-8 font-medium">Status</th>
+                <th className="py-3 pr-8 font-medium">Total</th>
+                <th className="py-3 text-right font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {atendimentos.map((atendimento) => (
-                <tr key={atendimento.id} className="border-b border-borderline/50 last:border-0">
-                  <td className="px-4 py-3 text-white">{atendimento.nomeCliente}</td>
-                  <td className="px-4 py-3 text-slate-300">{formatDataHora(atendimento.dataAtendimento)}</td>
-                  <td className="px-4 py-3">
+                <tr
+                  key={atendimento.id}
+                  className="border-t border-hairline transition-colors duration-150 ease-in-out hover:bg-paper"
+                >
+                  <td className="py-4 pr-8 font-medium text-ink">{atendimento.nomeCliente}</td>
+                  <td className="py-4 pr-8 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                    {formatDataHora(atendimento.dataAtendimento)}
+                  </td>
+                  <td className="py-4 pr-8">
                     <StatusBadge status={atendimento.status} />
                   </td>
-                  <td className="px-4 py-3 font-medium text-sage">{formatMoeda(atendimento.valorTotal)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="py-4 pr-8 font-mono text-[13px] text-sage-dark">
+                    {formatMoeda(atendimento.valorTotal)}
+                  </td>
+                  <td className="py-4 text-right whitespace-nowrap">
                     {atendimento.status === 'AGENDADO' && (
                       <Button
-                        variant="primary"
+                        variant="ghost"
                         size="sm"
                         onClick={() => setAcaoStatus({ atendimento, acao: 'concluir' })}
                       >
@@ -262,8 +272,9 @@ export function AtendimentosPage() {
                     )}
                     {(atendimento.status === 'AGENDADO' || atendimento.status === 'CONCLUIDO') && (
                       <Button
-                        variant="danger"
+                        variant="dangerText"
                         size="sm"
+                        className="ml-4"
                         onClick={() => setAcaoStatus({ atendimento, acao: 'cancelar' })}
                       >
                         Cancelar
@@ -277,12 +288,8 @@ export function AtendimentosPage() {
         </div>
       )}
 
-      <Modal
-        open={criando}
-        title="Novo atendimento"
-        onClose={() => setCriando(false)}
-      >
-        <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+      <Modal open={criando} title="Novo atendimento" onClose={() => setCriando(false)}>
+        <div className="flex max-h-[70vh] flex-col gap-5 overflow-y-auto pr-1">
           <Select label="Cliente *" value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
             <option value="">Selecione o cliente...</option>
             {loadingClientes ? (
@@ -304,12 +311,17 @@ export function AtendimentosPage() {
           />
 
           <div>
-            <span className="mb-2 block text-sm font-medium text-lilac">Serviços *</span>
+            <span className={`mb-2 block ${microLabel}`}>Serviços *</span>
             <div className="flex flex-col gap-3">
               {servicosForm.map((row, rowIndex) => (
-                <div key={rowIndex} className="rounded-lg border border-borderline bg-carbon p-3">
+                <div key={rowIndex} className="border border-hairline bg-ivory p-4">
                   <div className="flex items-center gap-2">
-                    <Select label="Serviço" value={row.servicoId} onChange={(e) => atualizarServico(rowIndex, e.target.value)}>
+                    <Select
+                      label="Serviço"
+                      value={row.servicoId}
+                      onChange={(e) => atualizarServico(rowIndex, e.target.value)}
+                      className="flex-1"
+                    >
                       <option value="">Selecione...</option>
                       {loadingServicos ? (
                         <option disabled>Carregando serviços...</option>
@@ -333,13 +345,14 @@ export function AtendimentosPage() {
                   </div>
 
                   {row.itensExtras.length > 0 && (
-                    <div className="mt-3 flex flex-col gap-2">
+                    <div className="mt-4 flex flex-col gap-3">
                       {row.itensExtras.map((extra, extraIndex) => (
                         <div key={extraIndex} className="flex items-end gap-2">
                           <Select
                             label="Item extra"
                             value={extra.itemId}
                             onChange={(e) => atualizarItemExtra(rowIndex, extraIndex, { itemId: e.target.value })}
+                            className="flex-1"
                           >
                             <option value="">Selecione...</option>
                             {itensDisponiveis?.map((item) => (
@@ -364,13 +377,18 @@ export function AtendimentosPage() {
                             size="sm"
                             onClick={() => removerItemExtra(rowIndex, extraIndex)}
                           >
-                            ✕
+                            remover
                           </Button>
                         </div>
                       ))}
                     </div>
                   )}
-                  <Button variant="ghost" size="sm" className="mt-2" onClick={() => adicionarItemExtra(rowIndex)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => adicionarItemExtra(rowIndex)}
+                  >
                     + Item extra
                   </Button>
                 </div>
@@ -381,7 +399,7 @@ export function AtendimentosPage() {
             </Button>
           </div>
 
-          {criarErro && <p className="text-sm text-red-400">{criarErro}</p>}
+          {criarErro && <p className="text-sm text-red-600">{criarErro}</p>}
 
           <div className="mt-2 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setCriando(false)}>
