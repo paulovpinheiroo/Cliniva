@@ -7,10 +7,12 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export function Select({ label, children, className = '', ...props }: SelectProps) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-lilac">{label}</span>
+    <label className="flex flex-col">
+      <span className="mb-1 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+        {label}
+      </span>
       <select
-        className={`rounded-lg border border-borderline bg-carbon px-3 py-2 text-white outline-none transition-colors focus:border-sage ${className}`}
+        className={`w-full cursor-pointer border-0 border-b border-hairline bg-transparent px-0 py-2 text-sm text-ink outline-none transition-colors duration-150 ease-in-out hover:border-ink/50 focus:border-sage ${className}`}
         {...props}
       >
         {children}

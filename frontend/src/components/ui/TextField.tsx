@@ -7,13 +7,17 @@ interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function TextField({ label, error, className = '', ...props }: TextFieldProps) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-lilac">{label}</span>
+    <label className="flex flex-col">
+      <span className="mb-1 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+        {label}
+      </span>
       <input
-        className={`rounded-lg border border-borderline bg-carbon px-3 py-2 text-white placeholder:text-slate-500 outline-none transition-colors focus:border-sage ${className}`}
+        className={`w-full border-0 border-b border-hairline bg-transparent px-0 py-2 text-sm text-ink outline-none transition-colors duration-150 ease-in-out placeholder:text-ink-soft/50 hover:border-ink/50 focus:border-sage ${
+          error ? 'border-b-red-600' : ''
+        } ${className}`}
         {...props}
       />
-      {error && <span className="text-xs text-red-400">{error}</span>}
+      {error && <span className="mt-1 text-xs text-red-600">{error}</span>}
     </label>
   )
 }

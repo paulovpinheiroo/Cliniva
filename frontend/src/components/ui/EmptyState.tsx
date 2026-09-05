@@ -4,8 +4,9 @@ interface EmptyStateProps {
 
 export function EmptyState({ message }: EmptyStateProps) {
   return (
-    <div className="rounded-xl border border-dashed border-borderline p-10 text-center text-sm text-slate-400">
-      {message}
+    <div className="border-t border-hairline py-12">
+      <p className="font-display text-2xl italic text-ink-soft/80">em branco</p>
+      <p className="mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">{message}</p>
     </div>
   )
 }

@@ -10,18 +10,18 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const base =
-  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex cursor-pointer items-center justify-center gap-2 uppercase transition-colors duration-150 ease-in-out disabled:cursor-not-allowed disabled:opacity-40'
 
 const variants: Record<Variant, string> = {
   primary: 'bg-sage text-carbon hover:bg-sage-dark',
-  secondary: 'bg-darkpurple text-lilac hover:bg-purple',
-  danger: 'bg-red-600 text-white hover:bg-red-500',
-  ghost: 'text-lilac hover:bg-darkpurple',
+  secondary: 'border border-hairline text-ink hover:border-ink hover:bg-ink hover:text-ivory',
+  danger: 'border border-red-700/40 text-red-700 hover:bg-red-700 hover:text-ivory',
+  ghost: 'text-ink-soft underline-offset-4 hover:text-ink hover:underline',
 }
 
 const sizes: Record<Size, string> = {
-  sm: 'px-2.5 py-1 text-xs',
-  md: 'px-4 py-2 text-sm',
+  sm: 'px-3 py-1.5 text-[11px] font-medium tracking-[0.18em]',
+  md: 'px-5 py-2.5 text-[11px] font-medium tracking-[0.18em]',
 }
 
 export function Button({ variant = 'primary', size = 'md', className = '', ...props }: ButtonProps) {
