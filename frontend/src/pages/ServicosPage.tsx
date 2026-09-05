@@ -84,6 +84,7 @@ export function ServicosPage() {
   return (
     <>
       <PageHeader
+        kicker="Catálogo"
         title="Serviços"
         subtitle="Procedimentos oferecidos pela clínica"
         action={<Button onClick={abrirCriar}>Novo serviço</Button>}
@@ -96,27 +97,39 @@ export function ServicosPage() {
       ) : !servicos || servicos.length === 0 ? (
         <EmptyState message="Nenhum serviço cadastrado. Adicione o primeiro com o botão acima." />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-borderline">
+        <div className="border-t border-hairline">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-borderline bg-surface text-left text-xs uppercase tracking-wide text-lilac">
-                <th className="px-4 py-3 font-medium">Nome</th>
-                <th className="px-4 py-3 font-medium">Descrição</th>
-                <th className="px-4 py-3 font-medium">Valor</th>
-                <th className="px-4 py-3 text-right font-medium">Ações</th>
+              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                <th className="py-3 pr-8 font-medium">Nome</th>
+                <th className="py-3 pr-8 font-medium">Descrição</th>
+                <th className="py-3 pr-8 font-medium">Valor</th>
+                <th className="py-3 text-right font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {servicos.map((servico) => (
-                <tr key={servico.id} className="border-b border-borderline/50 last:border-0">
-                  <td className="px-4 py-3 text-white">{servico.nome}</td>
-                  <td className="max-w-md truncate px-4 py-3 text-slate-400">{servico.descricao || '—'}</td>
-                  <td className="px-4 py-3 font-medium text-sage">{formatMoeda(servico.valor)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="secondary" size="sm" onClick={() => abrirEditar(servico)}>
+                <tr
+                  key={servico.id}
+                  className="border-t border-hairline transition-colors duration-150 ease-in-out hover:bg-paper"
+                >
+                  <td className="py-4 pr-8 font-medium text-ink">{servico.nome}</td>
+                  <td className="max-w-md truncate py-4 pr-8 text-ink-soft">
+                    {servico.descricao || '—'}
+                  </td>
+                  <td className="py-4 pr-8 font-mono text-[13px] text-sage-dark">
+                    {formatMoeda(servico.valor)}
+                  </td>
+                  <td className="py-4 text-right whitespace-nowrap">
+                    <Button variant="ghost" size="sm" onClick={() => abrirEditar(servico)}>
                       Editar
                     </Button>
-                    <Button variant="danger" size="sm" onClick={() => setDeletando(servico)}>
+                    <Button
+                      variant="dangerText"
+                      size="sm"
+                      className="ml-4"
+                      onClick={() => setDeletando(servico)}
+                    >
                       Excluir
                     </Button>
                   </td>
@@ -132,7 +145,7 @@ export function ServicosPage() {
         title={editando ? 'Editar serviço' : 'Novo serviço'}
         onClose={() => setModalAberto(false)}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <TextField
             label="Nome *"
             value={form.nome}
@@ -154,7 +167,7 @@ export function ServicosPage() {
             onChange={(e) => setForm({ ...form, valor: Number(e.target.value) })}
             placeholder="0,00"
           />
-          {formErro && <p className="text-sm text-red-400">{formErro}</p>}
+          {formErro && <p className="text-sm text-red-600">{formErro}</p>}
           <div className="mt-2 flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setModalAberto(false)}>
               Cancelar
