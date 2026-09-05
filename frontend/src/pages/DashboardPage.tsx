@@ -12,11 +12,22 @@ import { useApi } from '@/hooks/useApi'
 import type { AtendimentoResumo, Item } from '@/types'
 import { formatDataHora, formatMoeda } from '@/utils/format'
 
-function StatCell({ label, value, to }: { label: string; value: number; to: string }) {
+function StatCell({
+  label,
+  value,
+  to,
+  delay = 0,
+}: {
+  label: string
+  value: number
+  to: string
+  delay?: number
+}) {
   return (
     <Link
       to={to}
-      className="group block px-6 py-6 transition-colors duration-150 ease-in-out hover:bg-paper"
+      style={{ animationDelay: `${delay}ms` }}
+      className="group block animate-stagger px-6 py-6 transition-colors duration-150 ease-in-out hover:bg-paper"
     >
       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">{label}</p>
       <p className="mt-2 font-display text-4xl font-medium text-ink transition-colors duration-150 ease-in-out group-hover:text-accent-strong">
@@ -95,10 +106,10 @@ export function DashboardPage() {
       {error && <ErrorBanner message={error} />}
 
       <div className="mb-14 grid grid-cols-2 divide-hairline border-y border-hairline lg:grid-cols-4 lg:divide-x">
-        <StatCell label="Clientes" value={clientes?.length ?? 0} to="/clientes" />
-        <StatCell label="Serviços" value={servicos?.length ?? 0} to="/servicos" />
-        <StatCell label="Itens no estoque" value={itens?.length ?? 0} to="/estoque" />
-        <StatCell label="Atendimentos hoje" value={atendimentosHoje.length} to="/atendimentos" />
+        <StatCell label="Clientes" value={clientes?.length ?? 0} to="/clientes" delay={0} />
+        <StatCell label="Serviços" value={servicos?.length ?? 0} to="/servicos" delay={60} />
+        <StatCell label="Itens no estoque" value={itens?.length ?? 0} to="/estoque" delay={120} />
+        <StatCell label="Atendimentos hoje" value={atendimentosHoje.length} to="/atendimentos" delay={180} />
       </div>
 
       <div className="grid grid-cols-1 gap-x-14 gap-y-14 lg:grid-cols-3">

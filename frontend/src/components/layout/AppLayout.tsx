@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTheme } from '@/hooks/useTheme'
 
 const navItems = [
@@ -8,6 +8,15 @@ const navItems = [
   { to: '/estoque', label: 'Estoque' },
   { to: '/atendimentos', label: 'Atendimentos' },
 ]
+
+function PageTransition() {
+  const location = useLocation()
+  return (
+    <div key={location.pathname} className="animate-rise">
+      <Outlet />
+    </div>
+  )
+}
 
 export function AppLayout() {
   const { theme, toggleTheme } = useTheme()
@@ -87,7 +96,7 @@ export function AppLayout() {
         </header>
         <main className="flex-1 px-10 py-12">
           <div className="mx-auto w-full max-w-6xl">
-            <Outlet />
+            <PageTransition />
           </div>
         </main>
         <footer className="border-t border-hairline px-10 py-4">

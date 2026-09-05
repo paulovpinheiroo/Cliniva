@@ -76,3 +76,43 @@
     border-radius: 0;
   }
 }
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@utility animate-rise {
+  animation: rise 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@utility animate-fade {
+  animation: fade 140ms linear both;
+}
+
+@utility animate-stagger {
+  animation: rise 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-fade,
+  .animate-stagger {
+    animation: none;
+  }
+}
