@@ -5,20 +5,23 @@ import { clientesApi } from '@/api/clientesApi'
 import { itensApi } from '@/api/itensApi'
 import { servicosApi } from '@/api/servicosApi'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { Spinner } from '@/components/ui/Spinner'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useApi } from '@/hooks/useApi'
 import type { AtendimentoResumo, Item } from '@/types'
 import { formatDataHora, formatMoeda } from '@/utils/format'
 
-function StatCard({ label, value, to }: { label: string; value: number; to: string }) {
+function StatCell({ label, value, to }: { label: string; value: number; to: string }) {
   return (
     <Link
       to={to}
-      className="rounded-xl border border-borderline bg-surface p-5 transition-colors hover:border-sage/50"
+      className="group block px-6 py-6 transition-colors duration-150 ease-in-out hover:bg-paper"
     >
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className="mt-1 text-3xl font-semibold text-lilac">{value}</p>
+      <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">{label}</p>
+      <p className="mt-2 font-display text-4xl font-medium text-ink transition-colors duration-150 ease-in-out group-hover:text-sage-dark">
+        {value}
+      </p>
     </Link>
   )
 }
@@ -33,15 +36,17 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-xl border border-borderline bg-surface">
-      <div className="flex items-center justify-between border-b border-borderline px-5 py-3">
-        <h2 className="text-sm font-semibold text-white">{title}</h2>
+    <section>
+      <div className="flex items-baseline justify-between gap-4 border-b border-hairline pb-3">
+        <h2 className="font-display text-2xl font-medium text-ink">{title}</h2>
         {action}
       </div>
-      <div className="p-5">{children}</div>
+      {children}
     </section>
   )
 }
+
+const actionLink = 'text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft underline-offset-4 hover:text-ink hover:underline'
 
 function isHoje(iso: string): boolean {
   const data = new Date(iso)
@@ -81,56 +86,91 @@ export function DashboardPage() {
 
   return (
     <>
-      <h1 className="mb-1 text-2xl font-semibold text-white">Dashboard</h1>
-      <p className="mb-6 text-sm text-slate-400">Visão geral da clínica</p>
+      <PageHeader
+        kicker="Visão geral"
+        title="Dashboard"
+        subtitle="O estado da casa, em números e próximos passos."
+      />
 
       {error && <ErrorBanner message={error} />}
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Clientes" value={clientes?.length ?? 0} to="/clientes" />
-        <StatCard label="Serviços" value={servicos?.length ?? 0} to="/servicos" />
-        <StatCard label="Itens em estoque" value={itens?.length ?? 0} to="/estoque" />
-        <StatCard label="Atendimentos hoje" value={atendimentosHoje.length} to="/atendimentos" />
+      <div className="mb-14 grid grid-cols-2 divide-hairline border-y border-hairline lg:grid-cols-4 lg:divide-x">
+        <StatCell label="Clientes" value={clientes?.length ?? 0} to="/clientes" />
+        <StatCell label="Serviços" value={servicos?.length ?? 0} to="/servicos" />
+        <StatCell label="Itens no estoque" value={itens?.length ?? 0} to="/estoque" />
+        <StatCell label="Atendimentos hoje" value={atendimentosHoje.length} to="/atendimentos" />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <Section title="Próximos atendimentos" action={<Link className="text-xs text-lilac hover:underline" to="/atendimentos">Ver todos</Link>}>
-          {proximos.length === 0 ? (
-            <p className="py-4 text-sm text-slate-400">Nenhum atendimento agendado.</p>
-          ) : (
-            <ul className="divide-y divide-borderline/50">
-              {proximos.map((atendimento: AtendimentoResumo) => (
-                <li key={atendimento.id} className="flex items-center justify-between gap-4 py-2.5">
-                  <div>
-                    <p className="font-medium text-white">{atendimento.nomeCliente}</p>
-                    <p className="text-xs text-slate-400">{formatDataHora(atendimento.dataAtendimento)}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-sage">{formatMoeda(atendimento.valorTotal)}</span>
-                    <StatusBadge status={atendimento.status} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
+      <div className="grid grid-cols-1 gap-x-14 gap-y-14 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Section
+            title="Próximos atendimentos"
+            action={
+              <Link className={actionLink} to="/atendimentos">
+                Ver todos
+              </Link>
+            }
+          >
+            {proximos.length === 0 ? (
+              <p className="py-6 text-sm text-ink-soft">Nenhum atendimento agendado.</p>
+            ) : (
+              <ul>
+                {proximos.map((atendimento: AtendimentoResumo) => (
+                  <li
+                    key={atendimento.id}
+                    className="flex items-center justify-between gap-4 border-b border-hairline py-3.5"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-ink">{atendimento.nomeCliente}</p>
+                      <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                        {formatDataHora(atendimento.dataAtendimento)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-sm text-sage-dark">
+                        {formatMoeda(atendimento.valorTotal)}
+                      </span>
+                      <StatusBadge status={atendimento.status} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        </div>
 
-        <Section title="Estoque baixo" action={<Link className="text-xs text-lilac hover:underline" to="/estoque">Ver estoque</Link>}>
-          {estoqueBaixo.length === 0 ? (
-            <p className="py-4 text-sm text-slate-400">Nenhum item com estoque baixo. Tudo certo!</p>
-          ) : (
-            <ul className="divide-y divide-borderline/50">
-              {estoqueBaixo.map((item) => (
-                <li key={item.id} className="flex items-center justify-between py-2.5">
-                  <span className="text-white">{item.nome}</span>
-                  <span className="rounded-full bg-yellow-500/20 px-2.5 py-0.5 text-xs font-medium text-yellow-400">
-                    {item.quantidadeEmEstoque} restante
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
+        <div className="lg:mt-16">
+          <Section
+            title="Estoque baixo"
+            action={
+              <Link className={actionLink} to="/estoque">
+                Ver estoque
+              </Link>
+            }
+          >
+            {estoqueBaixo.length === 0 ? (
+              <p className="py-6 text-sm text-ink-soft">Nenhum item com estoque baixo. Tudo certo!</p>
+            ) : (
+              <ul>
+                {estoqueBaixo.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center justify-between gap-4 border-b border-hairline py-3.5"
+                  >
+                    <span className="text-sm text-ink">{item.nome}</span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="h-1.5 w-1.5 bg-yellow-700" />
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                        {item.quantidadeEmEstoque}
+                        {item.quantidadeEmEstoque === 1 ? ' restante' : ' restantes'}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        </div>
       </div>
     </>
   )
