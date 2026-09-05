@@ -20,7 +20,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Modal open={open} title={title} onClose={onCancel}>
-      <p className="mb-6 text-sm text-slate-300">{message}</p>
+      <p className="mb-8 text-sm leading-relaxed text-ink-soft">{message}</p>
       <div className="flex justify-end gap-3">
         <Button variant="ghost" onClick={onCancel}>
           Cancelar
