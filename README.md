@@ -21,10 +21,19 @@ em backend (Java/Spring Boot) e frontend (React).
 ```
 cliniva/
 ├── backend/       API REST — Java / Spring Boot / PostgreSQL / Maven
+│   ├── README.md        Guia completo do backend (PT)
+│   └── README.en.md     Technical guide (EN)
 ├── frontend/      SPA — React + TypeScript + Vite + Tailwind
+│   ├── README.md        Guia completo do frontend (PT)
+│   └── README.en.md     Technical guide (EN)
 ├── README.md
 └── EDR.png        Diagrama de entidade-relacionamento
 ```
+
+> Guias detalhados: [backend/README.md](backend/README.md) ·
+> [backend/README.en.md](backend/README.en.md) ·
+> [frontend/README.md](frontend/README.md) ·
+> [frontend/README.en.md](frontend/README.en.md)
 
 ## Como rodar localmente
 
@@ -64,6 +73,9 @@ cd backend
 mvn test
 ```
 
+Detalhes completos (endpoints, regras de domínio, erros):
+[`backend/README.md`](backend/README.md).
+
 ### 4. Frontend (UI em `http://localhost:5173`)
 
 ```bash
@@ -74,6 +86,9 @@ npm run dev
 
 O Vite encaminha `/api/*` para o backend (`localhost:8080`) durante o
 desenvolvimento, então não é necessário configurar CORS localmente.
+
+Detalhes completos (estrutura, tema, animações, como criar páginas):
+[`frontend/README.md`](frontend/README.md).
 
 ## API — visão geral
 
@@ -90,9 +105,31 @@ Erros seguem o formato `{"status", "mensagem", "erros"}` (400/404/409).
 
 ## Status
 
-🚀 `MVP Backend e Frontend concluídos` — funcionando ponta a ponta.
+🚀 **v0.1.0** — MVP funcional ponta a ponta + redesenho editorial + tema
+claro/escuro e micro-animações.
+
+### v0.1.0 · lançado
+
+- MVP Backend e Frontend (ver checklist abaixo) funcionando ponta a ponta.
+- Redesign da UI: linguagem editorial (Fraunces/Inter/Plex Mono), rail
+  carbon + conteúdo ivory, hairlines, sem sombras/arredondamentos.
+- Tema claro/escuro com acento por modo (sálvia / lilás) e preferência
+  do sistema na primeira visita.
+- Animações sóbrias (modal com blur da app via portal, transição de
+  páginas, stagger do dashboard, press tátil) — respeitando
+  `prefers-reduced-motion`.
+- READMEs detalhados de backend e frontend (PT + EN).
 
 ## Roadmap
+
+### v0.2.0 · CRM (planejado)
+
+- [ ] Perfil completo do cliente (aniversário, origem, preferências, canal) e status (prospect/ativo/inativo)
+- [ ] Histórico financeiro do cliente (atendimentos, gasto acumulado, frequência, última visita)
+- [ ] Anotações por cliente
+- [ ] Aniversariantes e selo de fidelidade (novo/recorrente/frequente)
+- [ ] Lembretes de atendimento e follow-up via WhatsApp (`wa.me`)
+- [ ] Dashboard: novos vs recorrentes + aniversariantes do mês
 
 ### MVP Backend ✅
 
