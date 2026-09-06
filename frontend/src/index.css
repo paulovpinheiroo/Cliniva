@@ -117,3 +117,8 @@
     animation: none;
   }
 }
+
+.cdk-blur-open #root {
+  filter: blur(6px);
+  transition: filter 180ms ease;
+}
