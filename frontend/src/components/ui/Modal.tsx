@@ -31,7 +31,7 @@ export function Modal({ open, title, onClose, children, index }: ModalProps) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-lg animate-rise border border-hairline bg-paper p-8">
+      <div className="relative w-full max-w-lg animate-rise border border-hairline bg-paper p-5 md:p-8">
         <div className="mb-6 flex items-start justify-between gap-4 border-b border-hairline pb-4">
           <div>
             {index !== undefined && (

@@ -105,7 +105,7 @@ export function DashboardPage() {
 
       {error && <ErrorBanner message={error} />}
 
-      <div className="mb-14 grid grid-cols-2 divide-hairline border-y border-hairline lg:grid-cols-4 lg:divide-x">
+      <div className="mb-14 grid grid-cols-1 divide-y divide-hairline border-y border-hairline lg:grid-cols-4 lg:divide-x lg:divide-y-0">
         <StatCell label="Clientes" value={clientes?.length ?? 0} to="/clientes" delay={0} />
         <StatCell label="Serviços" value={servicos?.length ?? 0} to="/servicos" delay={60} />
         <StatCell label="Itens no estoque" value={itens?.length ?? 0} to="/estoque" delay={120} />
