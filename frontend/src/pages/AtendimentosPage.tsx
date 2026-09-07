@@ -4,6 +4,7 @@ import { clientesApi } from '@/api/clientesApi'
 import { itensApi } from '@/api/itensApi'
 import { servicosApi } from '@/api/servicosApi'
 import { Button } from '@/components/ui/Button'
+import { CardActions, CardDetail, CardItem, CardLabel, CardList } from '@/components/ui/CardList'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
@@ -194,7 +195,7 @@ export function AtendimentosPage() {
         kicker="Agenda"
         title="Atendimentos"
         subtitle="Agenda de procedimentos e mudança de status"
-        action={<Button onClick={abrirCriar}>Novo atendimento</Button>}
+        action={<Button onClick={abrirCriar} className="w-full lg:w-auto">Novo atendimento</Button>}
       />
 
       <div className="mb-10 grid grid-cols-1 gap-x-12 gap-y-6 border-b border-hairline pb-8 md:grid-cols-2 xl:grid-cols-4">
@@ -233,17 +234,54 @@ export function AtendimentosPage() {
       ) : !atendimentos || atendimentos.length === 0 ? (
         <EmptyState message="Nenhum atendimento encontrado para os filtros atuais." />
       ) : (
-        <div className="border-t border-hairline">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
-                <th className="py-3 pr-8 font-medium">Cliente</th>
-                <th className="py-3 pr-8 font-medium">Data</th>
-                <th className="py-3 pr-8 font-medium">Status</th>
-                <th className="py-3 pr-8 font-medium">Total</th>
-                <th className="py-3 text-right font-medium">Ações</th>
-              </tr>
-            </thead>
+        <>
+          <CardList>
+            {atendimentos.map((atendimento) => (
+              <CardItem key={atendimento.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <CardLabel>{atendimento.nomeCliente}</CardLabel>
+                  <div className="shrink-0">
+                    <StatusBadge status={atendimento.status} />
+                  </div>
+                </div>
+                <CardDetail>{formatDataHora(atendimento.dataAtendimento)}</CardDetail>
+                <p className="mt-0.5 font-mono text-[13px] text-accent-strong">
+                  {formatMoeda(atendimento.valorTotal)}
+                </p>
+                <CardActions>
+                  {atendimento.status === 'AGENDADO' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAcaoStatus({ atendimento, acao: 'concluir' })}
+                    >
+                      Concluir
+                    </Button>
+                  )}
+                  {(atendimento.status === 'AGENDADO' || atendimento.status === 'CONCLUIDO') && (
+                    <Button
+                      variant="dangerText"
+                      size="sm"
+                      onClick={() => setAcaoStatus({ atendimento, acao: 'cancelar' })}
+                    >
+                      Cancelar
+                    </Button>
+                  )}
+                </CardActions>
+              </CardItem>
+            ))}
+          </CardList>
+          <div className="hidden border-t border-hairline md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                  <th className="py-3 pr-8 font-medium">Cliente</th>
+                  <th className="py-3 pr-8 font-medium">Data</th>
+                  <th className="py-3 pr-8 font-medium">Status</th>
+                  <th className="py-3 pr-8 font-medium">Total</th>
+                  <th className="py-3 text-right font-medium">Ações</th>
+                </tr>
+              </thead>
             <tbody>
               {atendimentos.map((atendimento) => (
                 <tr
@@ -285,7 +323,8 @@ export function AtendimentosPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       <Modal open={criando} title="Novo atendimento" onClose={() => setCriando(false)}>
@@ -315,7 +354,7 @@ export function AtendimentosPage() {
             <div className="flex flex-col gap-3">
               {servicosForm.map((row, rowIndex) => (
                 <div key={rowIndex} className="border border-hairline bg-ivory p-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Select
                       label="Serviço"
                       value={row.servicoId}
@@ -336,7 +375,7 @@ export function AtendimentosPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="mt-5"
+                      className="self-start sm:mt-5"
                       onClick={() => removerServico(rowIndex)}
                       disabled={servicosForm.length === 1}
                     >
@@ -347,7 +386,7 @@ export function AtendimentosPage() {
                   {row.itensExtras.length > 0 && (
                     <div className="mt-4 flex flex-col gap-3">
                       {row.itensExtras.map((extra, extraIndex) => (
-                        <div key={extraIndex} className="flex items-end gap-2">
+                        <div key={extraIndex} className="flex flex-col gap-2 sm:flex-row sm:items-end">
                           <Select
                             label="Item extra"
                             value={extra.itemId}
@@ -370,11 +409,12 @@ export function AtendimentosPage() {
                             onChange={(e) =>
                               atualizarItemExtra(rowIndex, extraIndex, { quantidade: Number(e.target.value) })
                             }
-                            className="w-24"
+                            className="w-full sm:w-24"
                           />
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="self-start sm:self-auto"
                             onClick={() => removerItemExtra(rowIndex, extraIndex)}
                           >
                             remover

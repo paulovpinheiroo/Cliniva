@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { servicosApi } from '@/api/servicosApi'
 import { Button } from '@/components/ui/Button'
+import { CardActions, CardDetail, CardItem, CardLabel, CardList } from '@/components/ui/CardList'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
@@ -87,7 +88,7 @@ export function ServicosPage() {
         kicker="Catálogo"
         title="Serviços"
         subtitle="Procedimentos oferecidos pela clínica"
-        action={<Button onClick={abrirCriar}>Novo serviço</Button>}
+        action={<Button onClick={abrirCriar} className="w-full lg:w-auto">Novo serviço</Button>}
       />
 
       {error && <ErrorBanner message={error} />}
@@ -97,16 +98,34 @@ export function ServicosPage() {
       ) : !servicos || servicos.length === 0 ? (
         <EmptyState message="Nenhum serviço cadastrado. Adicione o primeiro com o botão acima." />
       ) : (
-        <div className="border-t border-hairline">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
-                <th className="py-3 pr-8 font-medium">Nome</th>
-                <th className="py-3 pr-8 font-medium">Descrição</th>
-                <th className="py-3 pr-8 font-medium">Valor</th>
-                <th className="py-3 text-right font-medium">Ações</th>
-              </tr>
-            </thead>
+        <>
+          <CardList>
+            {servicos.map((servico) => (
+              <CardItem key={servico.id}>
+                <CardLabel>{servico.nome}</CardLabel>
+                <CardDetail className="truncate">{servico.descricao || '—'}</CardDetail>
+                <CardDetail>{formatMoeda(servico.valor)}</CardDetail>
+                <CardActions>
+                  <Button variant="ghost" size="sm" onClick={() => abrirEditar(servico)}>
+                    Editar
+                  </Button>
+                  <Button variant="dangerText" size="sm" onClick={() => setDeletando(servico)}>
+                    Excluir
+                  </Button>
+                </CardActions>
+              </CardItem>
+            ))}
+          </CardList>
+          <div className="hidden border-t border-hairline md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                  <th className="py-3 pr-8 font-medium">Nome</th>
+                  <th className="py-3 pr-8 font-medium">Descrição</th>
+                  <th className="py-3 pr-8 font-medium">Valor</th>
+                  <th className="py-3 text-right font-medium">Ações</th>
+                </tr>
+              </thead>
             <tbody>
               {servicos.map((servico) => (
                 <tr
@@ -137,7 +156,8 @@ export function ServicosPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       <Modal

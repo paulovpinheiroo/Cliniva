@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { clientesApi } from '@/api/clientesApi'
 import { Button } from '@/components/ui/Button'
+import { CardActions, CardDetail, CardItem, CardLabel, CardList } from '@/components/ui/CardList'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
@@ -86,7 +87,7 @@ export function ClientesPage() {
         kicker="Cadastro"
         title="Clientes"
         subtitle="Cadastro e busca de clientes da clínica"
-        action={<Button onClick={abrirCriar}>Novo cliente</Button>}
+        action={<Button onClick={abrirCriar} className="w-full lg:w-auto">Novo cliente</Button>}
       />
 
       <TextField
@@ -105,16 +106,34 @@ export function ClientesPage() {
       ) : !clientes || clientes.length === 0 ? (
         <EmptyState message="Nenhum cliente encontrado. Cadastre o primeiro com o botão acima." />
       ) : (
-        <div className="border-t border-hairline">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
-                <th className="py-3 pr-8 font-medium">Nome</th>
-                <th className="py-3 pr-8 font-medium">E-mail</th>
-                <th className="py-3 pr-8 font-medium">Telefone</th>
-                <th className="py-3 text-right font-medium">Ações</th>
-              </tr>
-            </thead>
+        <>
+          <CardList>
+            {clientes.map((cliente) => (
+              <CardItem key={cliente.id}>
+                <CardLabel>{cliente.nome}</CardLabel>
+                <CardDetail>{cliente.email || '—'}</CardDetail>
+                <CardDetail>{cliente.telefone}</CardDetail>
+                <CardActions>
+                  <Button variant="ghost" size="sm" onClick={() => abrirEditar(cliente)}>
+                    Editar
+                  </Button>
+                  <Button variant="dangerText" size="sm" onClick={() => setDeletando(cliente)}>
+                    Excluir
+                  </Button>
+                </CardActions>
+              </CardItem>
+            ))}
+          </CardList>
+          <div className="hidden border-t border-hairline md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                  <th className="py-3 pr-8 font-medium">Nome</th>
+                  <th className="py-3 pr-8 font-medium">E-mail</th>
+                  <th className="py-3 pr-8 font-medium">Telefone</th>
+                  <th className="py-3 text-right font-medium">Ações</th>
+                </tr>
+              </thead>
             <tbody>
               {clientes.map((cliente) => (
                 <tr
@@ -141,7 +160,8 @@ export function ClientesPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       <Modal

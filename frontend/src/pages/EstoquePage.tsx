@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { itensApi } from '@/api/itensApi'
 import { Button } from '@/components/ui/Button'
+import { CardActions, CardItem, CardLabel, CardList } from '@/components/ui/CardList'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
@@ -123,7 +124,7 @@ export function EstoquePage() {
         kicker="Insumos"
         title="Estoque"
         subtitle="Itens e materiais utilizados na clínica"
-        action={<Button onClick={abrirCriar}>Novo item</Button>}
+        action={<Button onClick={abrirCriar} className="w-full lg:w-auto">Novo item</Button>}
       />
 
       {error && <ErrorBanner message={error} />}
@@ -133,15 +134,39 @@ export function EstoquePage() {
       ) : !itens || itens.length === 0 ? (
         <EmptyState message="Nenhum item no estoque. Cadastre o primeiro com o botão acima." />
       ) : (
-        <div className="border-t border-hairline">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
-                <th className="py-3 pr-8 font-medium">Item</th>
-                <th className="py-3 pr-8 font-medium">Quantidade</th>
-                <th className="py-3 text-right font-medium">Ações</th>
-              </tr>
-            </thead>
+        <>
+          <CardList>
+            {itens.map((item) => (
+              <CardItem key={item.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <CardLabel>{item.nome}</CardLabel>
+                  <span className={`shrink-0 font-mono text-[13px] ${quantidadeClass(item.quantidadeEmEstoque)}`}>
+                    {item.quantidadeEmEstoque}
+                  </span>
+                </div>
+                <CardActions>
+                  <Button variant="ghost" size="sm" onClick={() => abrirMovimentacao(item)}>
+                    Entrada / Saída
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => abrirEditar(item)}>
+                    Editar
+                  </Button>
+                  <Button variant="dangerText" size="sm" onClick={() => setDeletando(item)}>
+                    Excluir
+                  </Button>
+                </CardActions>
+              </CardItem>
+            ))}
+          </CardList>
+          <div className="hidden border-t border-hairline md:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                  <th className="py-3 pr-8 font-medium">Item</th>
+                  <th className="py-3 pr-8 font-medium">Quantidade</th>
+                  <th className="py-3 text-right font-medium">Ações</th>
+                </tr>
+              </thead>
             <tbody>
               {itens.map((item) => (
                 <tr
@@ -172,7 +197,8 @@ export function EstoquePage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       <Modal
