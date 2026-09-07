@@ -103,6 +103,20 @@ Movimento **sóbrio**, sem dependências:
   (`cdk-blur-open #root { filter: blur(6px) }`) — uniforme nos dois temas.
 - `prefers-reduced-motion: reduce` desliga todas as animações.
 
+## Responsividade / mobile
+
+- **Drawer**: abaixo de `lg`, a rail carbon vira uma gaveta off-canvas, aberta
+  pelo botão `[ menu ]` no cabeçalho; fecha ao navegar, com `Escape` ou clicando
+  no overlay escurecido.
+- **Listas em cards**: abaixo de `md`, as telas de registro (clientes,
+  serviços, estoque, atendimentos) trocam a tabela por cards empilháveis
+  (`CardList`/`CardItem`/`CardDetail`/`CardActions` em
+  `components/ui/CardList.tsx`).
+- **Toque**: botões e campos de formulário têm área de toque maior no mobile
+  (`py-2.5`/`py-3`), compacta novamente no `md+`.
+- **Adaptação**: `PageHeader`, modais, cabeçalho e rodapé ajustam padding,
+  título e data (curta no mobile) por breakpoint.
+
 ## Como adicionar uma página/rota
 
 1. Crie `src/pages/NovaPaginaPage.tsx` seguindo o padrão das páginas atuais

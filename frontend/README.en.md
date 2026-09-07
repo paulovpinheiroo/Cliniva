@@ -102,6 +102,20 @@ Sober, dependency-free motion:
   app (`cdk-blur-open #root { filter: blur(6px) }`) — uniform in both themes.
 - `prefers-reduced-motion: reduce` disables every animation.
 
+## Responsive / mobile
+
+- **Drawer**: below `lg`, the carbon rail becomes an off-canvas drawer
+  opened by the `[ menu ]` button in the header; closes on navigation,
+  `Escape` or clicking the darkened overlay.
+- **Card lists**: below `md`, the record screens (clients, services, stock,
+  appointments) swap their table for stackable cards
+  (`CardList`/`CardItem`/`CardDetail`/`CardActions` in
+  `components/ui/CardList.tsx`).
+- **Touch**: buttons and form fields get a taller touch target on mobile
+  (`py-2.5`/`py-3`), back to compact on `md+`.
+- **Adaptation**: `PageHeader`, modals, header and footer adjust padding,
+  heading size and date (short on mobile) per breakpoint.
+
 ## Adding a page/route
 
 1. Create `src/pages/NovaPaginaPage.tsx` following the existing page pattern

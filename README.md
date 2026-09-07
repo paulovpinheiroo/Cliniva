@@ -120,6 +120,15 @@ claro/escuro e micro-animações.
   `prefers-reduced-motion`.
 - READMEs detalhados de backend e frontend (PT + EN).
 
+### v0.1.1 · responsividade mobile
+
+- Navegação por **drawer** no mobile (rail carbon off-canvas, botão `[ menu ]`
+  no cabeçalho; fecha ao navegar / `Escape` / clique no overlay).
+- Listas de registro viram **cards** em telas < `md` (Clientes, Serviços,
+  Estoque, Atendimentos) — tabelas preservadas no desktop.
+- Áreas de toque maiores (botões e campos), `PageHeader`, modais e
+  cabeçalho/rodapé adaptados por breakpoint.
+
 ## Roadmap
 
 ### v0.2.0 · CRM (planejado)
