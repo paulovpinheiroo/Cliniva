@@ -15,10 +15,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.cliniva.cliente.dtos.ClienteHistoricoResponseDTO;
 import com.cliniva.cliente.dtos.ClienteResponseDTO;
+import com.cliniva.cliente.dtos.CreateClienteNotaRequestDTO;
 import com.cliniva.cliente.dtos.CreateClienteRequestDTO;
 import com.cliniva.cliente.dtos.CreateClienteResponseDTO;
+import com.cliniva.cliente.dtos.NotaResponseDTO;
 import com.cliniva.cliente.dtos.UpdateClienteRequestDTO;
+import com.cliniva.cliente.enums.ClienteStatus;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,13 +42,44 @@ public class ClienteController {
 
     @GetMapping
     public List<ClienteResponseDTO> listarClientes(
-                    @RequestParam(required = false) String nome) {
-        return clienteService.listarClientes(nome);
+                    @RequestParam(required = false) String nome,
+                    @RequestParam(required = false) ClienteStatus status) {
+        return clienteService.listarClientes(nome, status);
+    }
+
+    @GetMapping("/aniversariantes")
+    public List<ClienteResponseDTO> aniversariantes(
+                    @RequestParam(required = false) Integer mes) {
+        return clienteService.aniversariantes(mes);
     }
 
     @GetMapping("/{id}")
     public ClienteResponseDTO buscarPorId(@PathVariable UUID id) {
         return clienteService.buscarPorId(id);
+    }
+
+    @GetMapping("/{id}/historico")
+    public ClienteHistoricoResponseDTO historico(@PathVariable UUID id) {
+        return clienteService.historicoCliente(id);
+    }
+
+    @GetMapping("/{id}/notas")
+    public List<NotaResponseDTO> listarNotas(@PathVariable UUID id) {
+        return clienteService.listarNotas(id);
+    }
+
+    @PostMapping("/{id}/notas")
+    @ResponseStatus(HttpStatus.CREATED)
+    public NotaResponseDTO criarNota(
+                    @PathVariable UUID id,
+                    @Valid @RequestBody CreateClienteNotaRequestDTO requestDTO) {
+        return clienteService.criarNota(id, requestDTO);
+    }
+
+    @DeleteMapping("/{id}/notas/{notaId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletarNota(@PathVariable UUID id, @PathVariable UUID notaId) {
+        clienteService.deletarNota(id, notaId);
     }
 
     @PutMapping("/{id}")
