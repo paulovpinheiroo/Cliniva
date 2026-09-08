@@ -157,7 +157,7 @@ export function ClienteDetalhePage() {
       <div className="grid grid-cols-1 gap-x-14 gap-y-14 lg:grid-cols-3">
         <div className="grid grid-cols-1 gap-y-14 lg:col-span-2">
           <Section title="Financeiro">
-            <div className="grid grid-cols-1 divide-y divide-hairline border-y border-hairline sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
+            <div className="grid grid-cols-1 divide-y divide-hairline border-y border-hairline sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:divide-y-0">
               <StatCell label="Atendimentos concluídos" value={historico.atendimentosConcluidos} />
               <StatCell label="Gasto total" value={formatMoeda(historico.gastoTotal)} />
               <StatCell label="Ticket médio" value={historico.ticketMedio === null ? '—' : formatMoeda(historico.ticketMedio)} />
