@@ -225,7 +225,7 @@ public class ClienteService {
                 cliente.getEmail(),
                 cliente.getTelefone(),
                 cliente.getDataNascimento(),
-                cliente.getStatus(),
+                statusOuProspect(cliente.getStatus()),
                 cliente.getOrigem(),
                 cliente.getCanalPreferido(),
                 cliente.getPreferencias(),
@@ -239,11 +239,15 @@ public class ClienteService {
                 cliente.getEmail(),
                 cliente.getTelefone(),
                 cliente.getDataNascimento(),
-                cliente.getStatus(),
+                statusOuProspect(cliente.getStatus()),
                 cliente.getOrigem(),
                 cliente.getCanalPreferido(),
                 cliente.getPreferencias(),
                 cliente.getObservacoes());
+    }
+
+    private ClienteStatus statusOuProspect(ClienteStatus status) {
+        return status != null ? status : ClienteStatus.PROSPECT;
     }
 
 }

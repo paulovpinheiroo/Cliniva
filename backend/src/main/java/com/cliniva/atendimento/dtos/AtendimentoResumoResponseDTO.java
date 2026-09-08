@@ -8,7 +8,9 @@ import com.cliniva.atendimento.enums.StatusAtendimento;
 
 public record AtendimentoResumoResponseDTO(
         UUID id,
+        UUID clienteId,
         String nomeCliente,
+        String telefoneCliente,
         LocalDateTime dataAtendimento,
         StatusAtendimento status,
         BigDecimal valorTotal) {

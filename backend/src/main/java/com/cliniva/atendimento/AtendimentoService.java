@@ -220,7 +220,9 @@ public class AtendimentoService {
         private AtendimentoResumoResponseDTO toResumoResponseDTO(Atendimento atendimento) {
                 return new AtendimentoResumoResponseDTO(
                                 atendimento.getId(),
+                                atendimento.getCliente().getId(),
                                 atendimento.getCliente().getNome(),
+                                atendimento.getCliente().getTelefone(),
                                 atendimento.getDataAtendimento(),
                                 atendimento.getStatus(),
                                 calcularValorTotal(atendimento));
