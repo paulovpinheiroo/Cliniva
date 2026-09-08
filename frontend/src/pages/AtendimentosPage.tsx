@@ -23,7 +23,25 @@ import type {
   Servico,
   StatusAtendimento,
 } from '@/types'
-import { formatDataHora, formatMoeda } from '@/utils/format'
+import { formatDataHora, formatMoeda, whatsappLink } from '@/utils/format'
+
+const lembrarLink =
+  'inline-flex cursor-pointer items-center justify-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft underline-offset-4 transition duration-150 ease-in-out hover:text-ink hover:underline'
+
+function LembrarLink({ atendimento }: { atendimento: AtendimentoResumo }) {
+  if (atendimento.status !== 'AGENDADO') return null
+  const mensagem = `Olá ${atendimento.nomeCliente}! Passando para lembrar do seu atendimento na Clíniva em ${formatDataHora(atendimento.dataAtendimento)}.`
+  return (
+    <a
+      href={whatsappLink(atendimento.telefoneCliente, mensagem)}
+      target="_blank"
+      rel="noreferrer"
+      className={lembrarLink}
+    >
+      Lembrar
+    </a>
+  )
+}
 
 interface ItemExtraRow {
   itemId: string
@@ -249,6 +267,7 @@ export function AtendimentosPage() {
                   {formatMoeda(atendimento.valorTotal)}
                 </p>
                 <CardActions>
+                  <LembrarLink atendimento={atendimento} />
                   {atendimento.status === 'AGENDADO' && (
                     <Button
                       variant="ghost"
@@ -299,6 +318,7 @@ export function AtendimentosPage() {
                     {formatMoeda(atendimento.valorTotal)}
                   </td>
                   <td className="py-4 text-right whitespace-nowrap">
+                    <LembrarLink atendimento={atendimento} />
                     {atendimento.status === 'AGENDADO' && (
                       <Button
                         variant="ghost"

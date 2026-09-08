@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { atendimentosApi } from '@/api/atendimentosApi'
@@ -10,7 +11,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useApi } from '@/hooks/useApi'
 import type { AtendimentoResumo, Item } from '@/types'
-import { formatDataHora, formatMoeda } from '@/utils/format'
+import { formatData, formatDataHora, formatMoeda, whatsappLink } from '@/utils/format'
 
 function StatCell({
   label,
@@ -69,6 +70,12 @@ function isHoje(iso: string): boolean {
   )
 }
 
+function noMesCorrente(iso: string): boolean {
+  const data = new Date(iso)
+  const agora = new Date()
+  return data.getFullYear() === agora.getFullYear() && data.getMonth() === agora.getMonth()
+}
+
 const ESTOQUE_BAIXO_LIMITE = 5
 
 export function DashboardPage() {
@@ -78,6 +85,11 @@ export function DashboardPage() {
   const { data: atendimentos, loading: loadingAtendimentos, error: errorAtendimentos } = useApi(() =>
     atendimentosApi.listar(),
   )
+  const {
+    data: aniversariantes,
+    loading: loadingAniversariantes,
+    error: errorAniversariantes,
+  } = useApi(() => clientesApi.aniversariantes())
 
   const loading = loadingClientes || loadingServicos || loadingItens || loadingAtendimentos
   const error = errorClientes ?? errorServicos ?? errorItens ?? errorAtendimentos
@@ -90,6 +102,25 @@ export function DashboardPage() {
       .slice(0, 5) ?? []
 
   const estoqueBaixo: Item[] = itens?.filter((item) => item.quantidadeEmEstoque < ESTOQUE_BAIXO_LIMITE) ?? []
+
+  const { novos, recorrentes } = useMemo(() => {
+    if (!atendimentos) return { novos: 0, recorrentes: 0 }
+    const inicioDoMes = new Date()
+    inicioDoMes.setDate(1)
+    inicioDoMes.setHours(0, 0, 0, 0)
+    const antesDoMes = new Set<string>()
+    for (const atendimento of atendimentos) {
+      if (new Date(atendimento.dataAtendimento) < inicioDoMes) antesDoMes.add(atendimento.clienteId)
+    }
+    const novosIds = new Set<string>()
+    const recorrentesIds = new Set<string>()
+    for (const atendimento of atendimentos) {
+      if (!noMesCorrente(atendimento.dataAtendimento)) continue
+      const alvo = antesDoMes.has(atendimento.clienteId) ? recorrentesIds : novosIds
+      alvo.add(atendimento.clienteId)
+    }
+    return { novos: novosIds.size, recorrentes: recorrentesIds.size }
+  }, [atendimentos])
 
   if (loading) {
     return <Spinner />
@@ -176,6 +207,74 @@ export function DashboardPage() {
                         {item.quantidadeEmEstoque === 1 ? ' restante' : ' restantes'}
                       </span>
                     </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        </div>
+      </div>
+
+      <div className="mt-14 grid grid-cols-1 gap-x-14 gap-y-14 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Section title="Este mês">
+            <div className="grid grid-cols-2 divide-x divide-hairline border-y border-hairline">
+              <div className="px-6 py-6">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                  Novos no mês
+                </p>
+                <p className="mt-2 font-display text-4xl font-medium text-ink">{novos}</p>
+              </div>
+              <div className="px-6 py-6">
+                <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+                  Recorrentes no mês
+                </p>
+                <p className="mt-2 font-display text-4xl font-medium text-ink">{recorrentes}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+              Novo = cliente atendido pela primeira vez neste mês. Recorrente = já vinha antes.
+            </p>
+          </Section>
+        </div>
+
+        <div className="lg:mt-16">
+          <Section
+            title="Aniversariantes do mês"
+            action={<Link className={actionLink} to="/clientes">Ver clientes</Link>}
+          >
+            {loadingAniversariantes ? (
+              <Spinner />
+            ) : errorAniversariantes ? (
+              <p className="py-6 text-sm text-ink-soft">Não foi possível carregar os aniversariantes.</p>
+            ) : !aniversariantes || aniversariantes.length === 0 ? (
+              <p className="py-6 text-sm text-ink-soft">Nenhum aniversário este mês.</p>
+            ) : (
+              <ul>
+                {aniversariantes.map((cliente) => (
+                  <li
+                    key={cliente.id}
+                    className="flex items-center justify-between gap-4 border-b border-hairline py-3.5"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-ink">{cliente.nome}</p>
+                      {cliente.dataNascimento && (
+                        <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                          {formatData(cliente.dataNascimento)}
+                        </p>
+                      )}
+                    </div>
+                    <a
+                      href={whatsappLink(
+                        cliente.telefone,
+                        `Olá ${cliente.nome}! Feliz aniversário! Passando pra desejar tudo de bom — e lembrar que a Clíniva tem um mimo pra você.`,
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft underline-offset-4 transition duration-150 ease-in-out hover:text-ink hover:underline"
+                    >
+                      Saudar
+                    </a>
                   </li>
                 ))}
               </ul>
