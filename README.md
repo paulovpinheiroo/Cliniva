@@ -66,7 +66,7 @@ mvn spring-boot:run
 
 O Hibernate cria/atualiza as tabelas automaticamente (`ddl-auto=update`).
 
-Executar os testes (59 unit tests, usa H2 em memória — não precisa de banco):
+Executar os testes (79 unit/integration tests, usa H2 em memória — não precisa de banco):
 
 ```bash
 cd backend
@@ -94,7 +94,8 @@ Detalhes completos (estrutura, tema, animações, como criar páginas):
 
 | Recurso | Endpoints |
 |---------|-----------|
-| Clientes | `GET/POST /api/clientes` · `GET/PUT/DELETE /api/clientes/{id}` · busca por `?nome=` |
+| Clientes | `GET/POST /api/clientes` · `GET/PUT/DELETE /api/clientes/{id}` · busca por `?nome=`, `?status=` |
+| Cliente · CRM | `GET /api/clientes/{id}/historico` · `GET/POST /api/clientes/{id}/notas` · `DELETE /api/clientes/{id}/notas/{notaId}` · `GET /api/clientes/aniversariantes?mes=` |
 | Serviços | `GET/POST /api/servicos` · `GET/PUT/DELETE /api/servicos/{id}` |
 | Itens/Estoque | `GET/POST /api/items` · `GET/PUT/DELETE /api/items/{id}` · `PATCH /api/items/{id}/estoque` |
 | Atendimentos | `GET/POST /api/atendimentos` · `GET /api/atendimentos/{id}` · `PATCH /{id}/status` |
@@ -105,20 +106,27 @@ Erros seguem o formato `{"status", "mensagem", "erros"}` (400/404/409).
 
 ## Status
 
-🚀 **v0.1.0** — MVP funcional ponta a ponta + redesenho editorial + tema
-claro/escuro e micro-animações.
+🚀 **v0.2.0** — CRM de clientes: perfil completo, status, histórico
+financeiro, anotações, aniversariantes, fidelização e WhatsApp.
 
-### v0.1.0 · lançado
+### v0.2.0 · CRM
 
-- MVP Backend e Frontend (ver checklist abaixo) funcionando ponta a ponta.
-- Redesign da UI: linguagem editorial (Fraunces/Inter/Plex Mono), rail
-  carbon + conteúdo ivory, hairlines, sem sombras/arredondamentos.
-- Tema claro/escuro com acento por modo (sálvia / lilás) e preferência
-  do sistema na primeira visita.
-- Animações sóbrias (modal com blur da app via portal, transição de
-  páginas, stagger do dashboard, press tátil) — respeitando
-  `prefers-reduced-motion`.
-- READMEs detalhados de backend e frontend (PT + EN).
+- Perfil completo do cliente: data de nascimento, origem
+  (indicação/Instagram/Google/passou na rua), canal preferido,
+  preferências e observações; status prospect/ativo/inativo.
+- **Histórico financeiro** por cliente: atendimentos, gasto acumulado,
+  ticket médio, última visita e frequência (`GET /clientes/{id}/historico`).
+- **Anotações** por cliente (listar/adicionar/excluir) e bloqueio de
+  exclusão de cliente com vínculos.
+- **Aniversariantes do mês** (`GET /clientes/aniversariantes?mes=`) e
+  selo de fidelidade na lista (novo / recorrente / frequente).
+- **WhatsApp**: follow-up na ficha do cliente e lembretes de
+  atendimento agendado (link `wa.me` pré-preenchido, sem custo).
+- Página **/clientes/:id** com ficha completa, financeiro, histórico e
+  anotações (responsiva).
+- Dashboard: **novos vs recorrentes** no mês e aniversariantes (com
+  botão de saudação via WhatsApp).
+- 79 testes backend verdes (unidade + integração de repositório).
 
 ### v0.1.1 · responsividade mobile
 
@@ -131,14 +139,11 @@ claro/escuro e micro-animações.
 
 ## Roadmap
 
-### v0.2.0 · CRM (planejado)
+### v0.3.0 · Deploy & Auth (planejado)
 
-- [ ] Perfil completo do cliente (aniversário, origem, preferências, canal) e status (prospect/ativo/inativo)
-- [ ] Histórico financeiro do cliente (atendimentos, gasto acumulado, frequência, última visita)
-- [ ] Anotações por cliente
-- [ ] Aniversariantes e selo de fidelidade (novo/recorrente/frequente)
-- [ ] Lembretes de atendimento e follow-up via WhatsApp (`wa.me`)
-- [ ] Dashboard: novos vs recorrentes + aniversariantes do mês
+- [ ] Autenticação/login de usuário (master)
+- [ ] Escolha de hospedagem gratuita e deploy do backend + banco
+- [ ] Deploy do frontend (Vercel/Netlify) e PWA / home screen
 
 ### MVP Backend ✅
 
@@ -153,7 +158,7 @@ claro/escuro e micro-animações.
 - [x] Validações (Bean Validation)
 - [x] Tratamento global de exceptions
 - [x] CRUD completo (update/delete) e mudança de status do Atendimento
-- [x] Testes unitários (59 testes, suite verde)
+- [x] Testes unitários (79 testes, suite verde)
 
 ### MVP Frontend ✅
 

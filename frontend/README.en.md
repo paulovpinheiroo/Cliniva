@@ -116,6 +116,19 @@ Sober, dependency-free motion:
 - **Adaptation**: `PageHeader`, modals, header and footer adjust padding,
   heading size and date (short on mobile) per breakpoint.
 
+## Pages (v0.2.0)
+
+- **`/` Dashboard** — counts, upcoming appointments, low stock,
+  new vs returning clients this month and month birthdays (with a
+  WhatsApp greeting).
+- **`/clientes`** — list with search, status filter and a loyalty label
+  (new / returning / frequent, derived from concluded appointments).
+- **`/clientes/:id`** — client card: profile, finances (total spend,
+  average ticket, last visit), appointment history, notes
+  (add/delete) and a `wa.me` follow-up link.
+- **`/servicos`**, **`/estoque`**, **`/atendimentos`** — CRUDs + agenda.
+  Scheduled appointments have a prefilled WhatsApp **Remind** link.
+
 ## Adding a page/route
 
 1. Create `src/pages/NovaPaginaPage.tsx` following the existing page pattern

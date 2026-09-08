@@ -117,6 +117,18 @@ Movimento **sóbrio**, sem dependências:
 - **Adaptação**: `PageHeader`, modais, cabeçalho e rodapé ajustam padding,
   título e data (curta no mobile) por breakpoint.
 
+## Páginas (v0.2.0)
+
+- **`/` Dashboard** — contagens, próximos atendimentos, estoque baixo,
+  novos vs recorrentes no mês e aniversariantes (com saudação via WhatsApp).
+- **`/clientes`** — lista com busca, filtro por status e selo de fidelidade
+  (novo/recorrente/frequente, calculado dos atendimentos concluídos).
+- **`/clientes/:id`** — ficha do cliente: perfil, financeiro (gasto total,
+  ticket médio, última visita), histórico de atendimentos, anotações
+  (adicionar/excluir) e follow-up via `wa.me`.
+- **`/servicos`**, **`/estoque`**, **`/atendimentos`** — CRUDs + agenda.
+  Atendimentos agendados têm link **Lembrar** (WhatsApp pré-preenchido).
+
 ## Como adicionar uma página/rota
 
 1. Crie `src/pages/NovaPaginaPage.tsx` seguindo o padrão das páginas atuais
