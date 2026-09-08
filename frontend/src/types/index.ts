@@ -1,8 +1,48 @@
+export type ClienteStatus = 'PROSPECT' | 'ATIVO' | 'INATIVO'
+
+export type OrigemCliente = 'INDICACAO' | 'INSTAGRAM' | 'GOOGLE' | 'PASSOU_NA_RUA'
+
+export type CanalPreferido = 'WHATSAPP' | 'INSTAGRAM' | 'EMAIL' | 'LIGACAO'
+
 export interface Cliente {
   id: string
   nome: string
   email: string | null
   telefone: string
+  dataNascimento: string | null
+  status: ClienteStatus
+  origem: OrigemCliente | null
+  canalPreferido: CanalPreferido | null
+  preferencias: string | null
+  observacoes: string | null
+}
+
+export interface ClienteInput {
+  nome: string
+  email: string
+  telefone: string
+  dataNascimento?: string
+  status?: ClienteStatus | ''
+  origem?: OrigemCliente | ''
+  canalPreferido?: CanalPreferido | ''
+  preferencias?: string
+  observacoes?: string
+}
+
+export interface ClienteNota {
+  id: string
+  texto: string
+  criadaEm: string
+}
+
+export interface ClienteHistorico {
+  cliente: Cliente
+  totalAtendimentos: number
+  atendimentosConcluidos: number
+  gastoTotal: number
+  ticketMedio: number | null
+  ultimaVisita: string | null
+  atendimentos: Atendimento[]
 }
 
 export interface Servico {
@@ -22,7 +62,9 @@ export type StatusAtendimento = 'AGENDADO' | 'CONCLUIDO' | 'CANCELADO'
 
 export interface AtendimentoResumo {
   id: string
+  clienteId: string
   nomeCliente: string
+  telefoneCliente: string
   dataAtendimento: string
   status: StatusAtendimento
   valorTotal: number
@@ -50,12 +92,6 @@ export interface Atendimento {
   status: StatusAtendimento
   valorTotal: number
   servicos: AtendimentoServico[]
-}
-
-export interface ClienteInput {
-  nome: string
-  email: string
-  telefone: string
 }
 
 export interface ServicoInput {

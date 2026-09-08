@@ -9,8 +9,20 @@ export function CardList({ children }: CardListProps) {
   return <div className="flex flex-col divide-y divide-hairline border-y border-hairline md:hidden">{children}</div>
 }
 
-export function CardItem({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`px-4 py-4 ${className}`}>{children}</div>
+export function CardItem({
+  children,
+  className = '',
+  onClick,
+}: {
+  children: ReactNode
+  className?: string
+  onClick?: () => void
+}) {
+  return (
+    <div className={`px-4 py-4 ${onClick ? 'cursor-pointer' : ''} ${className}`} onClick={onClick}>
+      {children}
+    </div>
+  )
 }
 
 export function CardActions({ children }: { children: ReactNode }) {
