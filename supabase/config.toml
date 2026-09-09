@@ -1,0 +1,39 @@
+# Cliniva — Supabase CLI config
+# Docs: https://supabase.com/docs/guides/cli/config
+
+# Referência local: o projeto é linkado ao remoto via `supabase link`
+# (gera supabase/.temp/project-ref com o project ref real — não versionar).
+project_id = "cliniva"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = [
+  "https://cliniva.vercel.app",
+]
+jwt_expiry = 3600
+# Auto-cadastro liberado: a plataforma permite self-registration de usuário
+enable_signup = true

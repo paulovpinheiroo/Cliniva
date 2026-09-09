@@ -19,8 +19,8 @@ import lombok.RequiredArgsConstructor;
  * <li>OWNER → a própria clínica do usuário;</li>
  * <li>ADMIN → visa a clínica informada no header {@code X-Clinica}
  * (modo suporte);</li>
- * <li>sem autenticação (desenvolvimento) → a clínica padrão semeada pelo
- * Flyway, preservando o comportamento mono-clínica do MVP.</li>
+ * <li>sem autenticação (desenvolvimento) → a clínica padrão semeada pela
+ * migration do Supabase, preservando o comportamento mono-clínica do MVP.</li>
  * </ul>
  */
 @Component

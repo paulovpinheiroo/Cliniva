@@ -11,7 +11,7 @@ em backend (Java/Spring Boot) e frontend (React).
 
 ## Stack
 
-- **Backend:** Java 21, Spring Boot 4.1, PostgreSQL (Flyway), Maven
+- **Backend:** Java 21, Spring Boot 4.1, PostgreSQL, Maven
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS
 - **Auth:** Supabase (Auth — JWT validado via JWKS na API)
 - **Testes backend:** JUnit 5 + Mockito (H2 em memória)
@@ -43,20 +43,32 @@ cliniva/
 - Java 21
 - Maven 3.9+
 - Node.js 20+ (npm)
-- PostgreSQL rodando em `localhost:5432`
+- Supabase CLI ([instalação](https://supabase.com/docs/guides/cli)) + Docker
 
 ### 2. Banco de dados
 
-Crie o banco e o usuário (uma única vez):
+O schema é versionado em `supabase/migrations/` (Supabase Migrations) e o
+backend roda com `ddl-auto=validate` — quem cria o schema é a migração,
+não o Hibernate.
+
+Suba o ambiente local do Supabase (Postgres em `localhost:54322`), que
+aplica as migrations automaticamente:
 
 ```bash
-sudo -u postgres psql -c "CREATE ROLE cliniva LOGIN PASSWORD 'cliniva';"
-sudo -u postgres psql -c "CREATE DATABASE cliniva OWNER cliniva;"
+supabase start
 ```
 
-As credenciais padrão (`cliniva`/`cliniva`) podem ser sobrescritas
-via variáveis de ambiente: `SPRING_DATASOURCE_URL`,
-`SPRING_DATASOURCE_USER`, `SPRING_DATASOURCE_PASSWORD`.
+As credenciais da API/Supabase local ficam em `supabase status`.
+Para apontar o backend para o banco local, use:
+
+```bash
+SPRING_DATASOURCE_URL='jdbc:postgresql://localhost:54322/postgres' \
+SPRING_DATASOURCE_USER=postgres \
+SPRING_DATASOURCE_PASSWORD=postgres
+```
+
+> Alternativa: `supabase link --project-ref <ref>` + `supabase db push`
+> para aplicar as migrations no projeto remoto do Supabase.
 
 ### 3. Backend (API em `http://localhost:8080`)
 
@@ -65,8 +77,8 @@ cd backend
 mvn spring-boot:run
 ```
 
-O schema é gerenciado 100% pelo Flyway (`ddl-auto=validate`) — a migração
-V3 cria a **Clínica Padrão** e o usuário **ADMIN master**
+A migration `20260909000003_seed_administracao.sql` cria a **Clínica
+Padrão** e o usuário **ADMIN master**
 (`paulovictorpinheiro998663264@gmail.com`), usado no painel `/admin`.
 
 Executar os testes (109 unit/integration tests, usa H2 em memória — não precisa de banco):
@@ -124,11 +136,18 @@ Erros seguem o formato `{"status", "mensagem", "erros"}` (400/401/403/404/409/50
 ### Supabase (banco + auth)
 
 1. Crie um projeto no [Supabase](https://supabase.com).
-2. Em **Project Settings → API** copie: URL do projeto, `anon key`,
-   `service_role key` e **Project Settings → Database → Connection URI**.
-3. Driver JDBC: `jdbc:postgresql://db.<ref>.supabase.co:5432/postgres?sslmode=require`
-   (usuário `postgres` e a senha do banco). O Flyway roda
-   automaticamente na primeira subida.
+2. **Integração com GitHub**: mapeie o repositório (Working directory
+   `supabase`) e a **Production branch = `production`**. Ao dar merge
+   em `production`, a integração aplica `supabase/migrations/` no banco
+   de produção automaticamente.
+3. Em **Project Settings → API** copie: URL do projeto, `anon key`,
+   `service_role key` e **Project Settings → Database → Connection URI`.
+4. Driver JDBC: `jdbc:postgresql://db.<ref>.supabase.co:5432/postgres?sslmode=require`
+   (usuário `postgres` e a senha do banco).
+
+> **Ordem recomendada no deploy:** primeiro dê merge em `production`
+> (aplica as migrations), depois o deploy da app na `main` — o backend
+> sobe com `ddl-auto=validate` e exige o schema já existente.
 
 ### Backend (Fly.io)
 

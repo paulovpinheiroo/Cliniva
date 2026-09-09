@@ -1,4 +1,4 @@
--- Cliniva v0.1.0-v0.2.0 schema (baseline p/ Flyway)
+-- Cliniva v0.1.0-v0.2.0 schema (baseline)
 
 CREATE TABLE cliente (
     id uuid NOT NULL,
