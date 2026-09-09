@@ -20,6 +20,7 @@ import com.cliniva.item.dtos.CreateItemResponseDTO;
 import com.cliniva.item.dtos.ItemResponseDTO;
 import com.cliniva.item.dtos.MovimentacaoEstoqueRequestDTO;
 import com.cliniva.item.dtos.UpdateItemRequestDTO;
+import com.cliniva.tenancy.ClinicaContext;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,40 +30,41 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ItemController {
     private final ItemService itemService;
+    private final ClinicaContext clinicaContext;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateItemResponseDTO createItem(@Valid @RequestBody CreateItemRequestDTO requestDTO) {
-        return itemService.createItem(requestDTO);
+        return itemService.createItem(clinicaContext.obterClinicaAtual(), requestDTO);
     }
 
     @GetMapping
     public List<ItemResponseDTO> listarItems() {
-        return itemService.listarItems();
+        return itemService.listarItems(clinicaContext.obterClinicaAtual());
     }
 
     @GetMapping("/{id}")
     public ItemResponseDTO buscarPorId(@PathVariable UUID id) {
-        return itemService.buscarPorId(id);
+        return itemService.buscarPorId(clinicaContext.obterClinicaAtual(), id);
     }
 
     @PutMapping("/{id}")
     public ItemResponseDTO atualizarItem(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateItemRequestDTO requestDTO) {
-        return itemService.atualizarItem(id, requestDTO);
+        return itemService.atualizarItem(clinicaContext.obterClinicaAtual(), id, requestDTO);
     }
 
     @PatchMapping("/{id}/estoque")
     public ItemResponseDTO movimentarEstoque(
             @PathVariable UUID id,
             @Valid @RequestBody MovimentacaoEstoqueRequestDTO requestDTO) {
-        return itemService.movimentarEstoque(id, requestDTO);
+        return itemService.movimentarEstoque(clinicaContext.obterClinicaAtual(), id, requestDTO);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletarItem(@PathVariable UUID id) {
-        itemService.deletarItem(id);
+        itemService.deletarItem(clinicaContext.obterClinicaAtual(), id);
     }
 }

@@ -9,13 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.cliniva.tenancy.Clinica;
 
 public interface ItemRepository extends JpaRepository<Item, UUID> {
-    boolean existsByNome(String nome);
-
-    Optional<Item> findByNome(String nome);
-
-    boolean existsByNomeAndIdNot(String nome, UUID id);
-
     Optional<Item> findByIdAndClinica(UUID id, Clinica clinica);
+
+    boolean existsByIdAndClinica(UUID id, Clinica clinica);
 
     List<Item> findByClinica(Clinica clinica);
 

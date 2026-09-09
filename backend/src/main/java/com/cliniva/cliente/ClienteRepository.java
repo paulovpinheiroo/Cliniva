@@ -13,24 +13,6 @@ import com.cliniva.tenancy.Clinica;
 
 public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
 
-    Optional<Cliente> findByEmail(String email);
-
-    Optional<Cliente> findByTelefone(String telefone);
-
-    boolean existsByEmail(String email);
-
-    boolean existsByTelefone(String telefone);
-
-    List<Cliente> findByNomeContainingIgnoreCase(String nome);
-
-    List<Cliente> findByStatus(ClienteStatus status);
-
-    List<Cliente> findByNomeContainingIgnoreCaseAndStatus(String nome, ClienteStatus status);
-
-    boolean existsByEmailAndIdNot(String email, UUID id);
-
-    boolean existsByTelefoneAndIdNot(String telefone, UUID id);
-
     Optional<Cliente> findByIdAndClinica(UUID id, Clinica clinica);
 
     boolean existsByIdAndClinica(UUID id, Clinica clinica);
@@ -51,9 +33,6 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
 
     List<Cliente> findByClinicaAndNomeContainingIgnoreCaseAndStatus(Clinica clinica, String nome,
             ClienteStatus status);
-
-    @Query("SELECT c FROM Cliente c WHERE EXTRACT(MONTH FROM c.dataNascimento) = :mes")
-    List<Cliente> findByDataNascimentoMes(@Param("mes") int mes);
 
     @Query("SELECT c FROM Cliente c WHERE c.clinica = :clinica AND EXTRACT(MONTH FROM c.dataNascimento) = :mes")
     List<Cliente> findByDataNascimentoMesAndClinica(@Param("mes") int mes, @Param("clinica") Clinica clinica);

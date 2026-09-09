@@ -9,13 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.cliniva.tenancy.Clinica;
 
 public interface ServicoRepository extends JpaRepository<Servico, UUID> {
-    Optional<Servico> findByNome(String nome);
-
-    boolean existsByNome(String nome);
-
-    boolean existsByNomeAndIdNot(String nome, UUID id);
-
     Optional<Servico> findByIdAndClinica(UUID id, Clinica clinica);
+
+    boolean existsByIdAndClinica(UUID id, Clinica clinica);
 
     List<Servico> findByClinica(Clinica clinica);
 

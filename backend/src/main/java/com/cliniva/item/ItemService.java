@@ -16,6 +16,7 @@ import com.cliniva.item.dtos.CreateItemResponseDTO;
 import com.cliniva.item.dtos.ItemResponseDTO;
 import com.cliniva.item.dtos.MovimentacaoEstoqueRequestDTO;
 import com.cliniva.item.dtos.UpdateItemRequestDTO;
+import com.cliniva.tenancy.Clinica;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,11 +26,12 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final AtendimentoItemRepository atendimentoItemRepository;
 
-    public CreateItemResponseDTO createItem(CreateItemRequestDTO requestDTO) {
-        if (itemRepository.existsByNome(requestDTO.nome())) {
+    public CreateItemResponseDTO createItem(Clinica clinica, CreateItemRequestDTO requestDTO) {
+        if (itemRepository.existsByNomeAndClinica(requestDTO.nome(), clinica)) {
             throw new RecursoDuplicadoException("Item com o mesmo nome já existe");
         }
         Item item = new Item();
+        item.setClinica(clinica);
         item.setNome(requestDTO.nome());
         BigDecimal quantidadeInicial = requestDTO.quantidadeEmEstoque() != null
                 ? requestDTO.quantidadeEmEstoque()
@@ -40,23 +42,23 @@ public class ItemService {
     }
 
     @Transactional(readOnly = true)
-    public List<ItemResponseDTO> listarItems() {
-        return itemRepository.findAll().stream().map(this::toResponseDTO).toList();
+    public List<ItemResponseDTO> listarItems(Clinica clinica) {
+        return itemRepository.findByClinica(clinica).stream().map(this::toResponseDTO).toList();
     }
 
     @Transactional(readOnly = true)
-    public ItemResponseDTO buscarPorId(UUID id) {
-        Item item = itemRepository.findById(id)
+    public ItemResponseDTO buscarPorId(Clinica clinica, UUID id) {
+        Item item = itemRepository.findByIdAndClinica(id, clinica)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Item não encontrado"));
         return toResponseDTO(item);
     }
 
     @Transactional
-    public ItemResponseDTO atualizarItem(UUID id, UpdateItemRequestDTO requestDTO) {
-        Item item = itemRepository.findById(id)
+    public ItemResponseDTO atualizarItem(Clinica clinica, UUID id, UpdateItemRequestDTO requestDTO) {
+        Item item = itemRepository.findByIdAndClinica(id, clinica)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Item não encontrado"));
 
-        if (itemRepository.existsByNomeAndIdNot(requestDTO.nome(), id)) {
+        if (itemRepository.existsByNomeAndIdNotAndClinica(requestDTO.nome(), id, clinica)) {
             throw new RecursoDuplicadoException("Item com o mesmo nome já existe");
         }
 
@@ -65,8 +67,8 @@ public class ItemService {
     }
 
     @Transactional
-    public ItemResponseDTO movimentarEstoque(UUID id, MovimentacaoEstoqueRequestDTO requestDTO) {
-        Item item = itemRepository.findById(id)
+    public ItemResponseDTO movimentarEstoque(Clinica clinica, UUID id, MovimentacaoEstoqueRequestDTO requestDTO) {
+        Item item = itemRepository.findByIdAndClinica(id, clinica)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Item não encontrado"));
 
         if (requestDTO.tipo() == MovimentacaoEstoqueRequestDTO.TipoMovimentacao.ENTRADA) {
@@ -79,8 +81,8 @@ public class ItemService {
     }
 
     @Transactional
-    public void deletarItem(UUID id) {
-        if (!itemRepository.existsById(id)) {
+    public void deletarItem(Clinica clinica, UUID id) {
+        if (!itemRepository.existsByIdAndClinica(id, clinica)) {
             throw new RecursoNaoEncontradoException("Item não encontrado");
         }
         if (atendimentoItemRepository.existsByItem_Id(id)) {

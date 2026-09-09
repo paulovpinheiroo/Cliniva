@@ -24,6 +24,7 @@ import com.cliniva.exception.RecursoNaoEncontradoException;
 import com.cliniva.item.dtos.CreateItemRequestDTO;
 import com.cliniva.item.dtos.MovimentacaoEstoqueRequestDTO;
 import com.cliniva.item.dtos.UpdateItemRequestDTO;
+import com.cliniva.tenancy.Clinica;
 
 @ExtendWith(MockitoExtension.class)
 class ItemServiceTest {
@@ -37,8 +38,18 @@ class ItemServiceTest {
     @InjectMocks
     private ItemService itemService;
 
+    private static final Clinica CLINICA = clinica("Clínica A");
+
+    private static Clinica clinica(String nome) {
+        Clinica clinica = new Clinica();
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "nome", nome);
+        return clinica;
+    }
+
     private Item item(UUID id, String nome, String estoque) {
         Item item = new Item();
+        item.setClinica(CLINICA);
         item.setNome(nome);
         if (estoque != null) {
             item.adicionarQuantidade(new BigDecimal(estoque));
@@ -51,11 +62,11 @@ class ItemServiceTest {
 
     @Test
     void deveCriarItemComEstoqueInformado() {
-        when(itemRepository.existsByNome("Sérum Vitamina C")).thenReturn(false);
+        when(itemRepository.existsByNomeAndClinica("Sérum Vitamina C", CLINICA)).thenReturn(false);
         when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = itemService.createItem(
+        var resposta = itemService.createItem(CLINICA,
                 new CreateItemRequestDTO("Sérum Vitamina C", new BigDecimal("10")));
 
         assertThat(resposta.quantidadeEmEstoque()).isEqualByComparingTo("10");
@@ -63,11 +74,11 @@ class ItemServiceTest {
 
     @Test
     void deveCriarItemSemEstoqueIniciandoEmZero() {
-        when(itemRepository.existsByNome("Sérum Vitamina C")).thenReturn(false);
+        when(itemRepository.existsByNomeAndClinica("Sérum Vitamina C", CLINICA)).thenReturn(false);
         when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = itemService.createItem(
+        var resposta = itemService.createItem(CLINICA,
                 new CreateItemRequestDTO("Sérum Vitamina C", null));
 
         assertThat(resposta.quantidadeEmEstoque()).isEqualByComparingTo(BigDecimal.ZERO);
@@ -75,9 +86,9 @@ class ItemServiceTest {
 
     @Test
     void naoDeveCriarItemComNomeDuplicado() {
-        when(itemRepository.existsByNome("Sérum Vitamina C")).thenReturn(true);
+        when(itemRepository.existsByNomeAndClinica("Sérum Vitamina C", CLINICA)).thenReturn(true);
 
-        assertThatThrownBy(() -> itemService.createItem(
+        assertThatThrownBy(() -> itemService.createItem(CLINICA,
                 new CreateItemRequestDTO("Sérum Vitamina C", null)))
                 .isInstanceOf(RecursoDuplicadoException.class);
     }
@@ -86,11 +97,11 @@ class ItemServiceTest {
     void entradaDeveSomarAoEstoque() {
         UUID id = UUID.randomUUID();
         Item item = item(id, "Sérum Vitamina C", "10");
-        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.of(item));
         when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = itemService.movimentarEstoque(id,
+        var resposta = itemService.movimentarEstoque(CLINICA, id,
                 new MovimentacaoEstoqueRequestDTO(
                         MovimentacaoEstoqueRequestDTO.TipoMovimentacao.ENTRADA, new BigDecimal("5")));
 
@@ -101,11 +112,11 @@ class ItemServiceTest {
     void saidaDeveSubtrairDoEstoque() {
         UUID id = UUID.randomUUID();
         Item item = item(id, "Sérum Vitamina C", "10");
-        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.of(item));
         when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = itemService.movimentarEstoque(id,
+        var resposta = itemService.movimentarEstoque(CLINICA, id,
                 new MovimentacaoEstoqueRequestDTO(
                         MovimentacaoEstoqueRequestDTO.TipoMovimentacao.SAIDA, new BigDecimal("4")));
 
@@ -115,9 +126,9 @@ class ItemServiceTest {
     @Test
     void movimentacaoDeItemInexistenteRetornaErro() {
         UUID id = UUID.randomUUID();
-        when(itemRepository.findById(id)).thenReturn(Optional.empty());
+        when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> itemService.movimentarEstoque(id,
+        assertThatThrownBy(() -> itemService.movimentarEstoque(CLINICA, id,
                 new MovimentacaoEstoqueRequestDTO(
                         MovimentacaoEstoqueRequestDTO.TipoMovimentacao.ENTRADA, BigDecimal.ONE)))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
@@ -126,23 +137,23 @@ class ItemServiceTest {
     @Test
     void naoDeveRenomearComNomeDeOutroItem() {
         UUID id = UUID.randomUUID();
-        when(itemRepository.findById(id)).thenReturn(Optional.of(item(id, "Sérum", null)));
-        when(itemRepository.existsByNomeAndIdNot("Cera", id)).thenReturn(true);
+        when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.of(item(id, "Sérum", null)));
+        when(itemRepository.existsByNomeAndIdNotAndClinica("Cera", id, CLINICA)).thenReturn(true);
 
         assertThatThrownBy(() -> itemService.atualizarItem(
-                id, new UpdateItemRequestDTO("Cera")))
+                CLINICA, id, new UpdateItemRequestDTO("Cera")))
                 .isInstanceOf(RecursoDuplicadoException.class);
     }
 
     @Test
     void deveRenomearItem() {
         UUID id = UUID.randomUUID();
-        when(itemRepository.findById(id)).thenReturn(Optional.of(item(id, "Sérum", null)));
-        when(itemRepository.existsByNomeAndIdNot("Sérum Facial", id)).thenReturn(false);
+        when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.of(item(id, "Sérum", null)));
+        when(itemRepository.existsByNomeAndIdNotAndClinica("Sérum Facial", id, CLINICA)).thenReturn(false);
         when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = itemService.atualizarItem(id, new UpdateItemRequestDTO("Sérum Facial"));
+        var resposta = itemService.atualizarItem(CLINICA, id, new UpdateItemRequestDTO("Sérum Facial"));
 
         assertThat(resposta.nome()).isEqualTo("Sérum Facial");
     }
@@ -150,10 +161,10 @@ class ItemServiceTest {
     @Test
     void naoDeveDeletarItemUsadoEmAtendimentos() {
         UUID id = UUID.randomUUID();
-        when(itemRepository.existsById(id)).thenReturn(true);
+        when(itemRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(true);
         when(atendimentoItemRepository.existsByItem_Id(id)).thenReturn(true);
 
-        assertThatThrownBy(() -> itemService.deletarItem(id))
+        assertThatThrownBy(() -> itemService.deletarItem(CLINICA, id))
                 .isInstanceOf(RecursoEmUsoException.class);
 
         verify(itemRepository, never()).deleteById(any());
@@ -162,9 +173,9 @@ class ItemServiceTest {
     @Test
     void naoDeveDeletarItemInexistente() {
         UUID id = UUID.randomUUID();
-        when(itemRepository.existsById(id)).thenReturn(false);
+        when(itemRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(false);
 
-        assertThatThrownBy(() -> itemService.deletarItem(id))
+        assertThatThrownBy(() -> itemService.deletarItem(CLINICA, id))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 }

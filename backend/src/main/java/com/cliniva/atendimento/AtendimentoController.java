@@ -24,6 +24,7 @@ import com.cliniva.atendimento.dtos.CreateAtendimentoResponseDTO;
 import com.cliniva.atendimento.dtos.UpdateAtendimentoRequestDTO;
 import com.cliniva.atendimento.dtos.UpdateStatusAtendimentoRequestDTO;
 import com.cliniva.atendimento.enums.StatusAtendimento;
+import com.cliniva.tenancy.ClinicaContext;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +34,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AtendimentoController {
     private final AtendimentoService atendimentoService;
+    private final ClinicaContext clinicaContext;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateAtendimentoResponseDTO createAtendimento(@Valid @RequestBody CreateAtendimentoRequestDTO requestDTO) {
-        return atendimentoService.createAtendimento(requestDTO);
+        return atendimentoService.createAtendimento(clinicaContext.obterClinicaAtual(), requestDTO);
     }
 
     @GetMapping
@@ -46,25 +48,26 @@ public class AtendimentoController {
             @RequestParam(required = false) UUID clienteId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim) {
-        return atendimentoService.listarAtendimentos(status, clienteId, dataInicio, dataFim);
+        return atendimentoService.listarAtendimentos(clinicaContext.obterClinicaAtual(), status, clienteId, dataInicio,
+                dataFim);
     }
 
     @GetMapping("/{id}")
     public AtendimentoResponseDTO buscarPorId(@PathVariable UUID id) {
-        return atendimentoService.buscarPorId(id);
+        return atendimentoService.buscarPorId(clinicaContext.obterClinicaAtual(), id);
     }
 
     @PatchMapping("/{id}/status")
     public AtendimentoResponseDTO alterarStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateStatusAtendimentoRequestDTO requestDTO) {
-        return atendimentoService.alterarStatus(id, requestDTO.novoStatus());
+        return atendimentoService.alterarStatus(clinicaContext.obterClinicaAtual(), id, requestDTO.novoStatus());
     }
 
     @PutMapping("/{id}")
     public AtendimentoResponseDTO atualizarAtendimento(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateAtendimentoRequestDTO requestDTO) {
-        return atendimentoService.atualizarAtendimento(id, requestDTO);
+        return atendimentoService.atualizarAtendimento(clinicaContext.obterClinicaAtual(), id, requestDTO);
     }
 }

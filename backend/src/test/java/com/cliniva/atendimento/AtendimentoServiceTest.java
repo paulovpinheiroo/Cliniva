@@ -43,6 +43,7 @@ import com.cliniva.item.Item;
 import com.cliniva.item.ItemRepository;
 import com.cliniva.servico.Servico;
 import com.cliniva.servico.ServicoRepository;
+import com.cliniva.tenancy.Clinica;
 
 @ExtendWith(MockitoExtension.class)
 class AtendimentoServiceTest {
@@ -51,6 +52,8 @@ class AtendimentoServiceTest {
         private static final UUID CLIENTE_ID = UUID.randomUUID();
         private static final UUID SERVICO_ID = UUID.randomUUID();
         private static final UUID ITEM_ID = UUID.randomUUID();
+
+        private static final Clinica CLINICA = clinica("Clínica A");
 
         @Mock
         private AtendimentoRepository atendimentoRepository;
@@ -68,8 +71,16 @@ class AtendimentoServiceTest {
         @InjectMocks
         private AtendimentoService atendimentoService;
 
+        private static Clinica clinica(String nome) {
+                Clinica clinica = new Clinica();
+                ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+                ReflectionTestUtils.setField(clinica, "nome", nome);
+                return clinica;
+        }
+
         private Cliente cliente(UUID id, String nome) {
                 Cliente cliente = new Cliente();
+                cliente.setClinica(CLINICA);
                 cliente.setNome(nome);
                 ReflectionTestUtils.setField(cliente, "id", id);
                 return cliente;
@@ -77,6 +88,7 @@ class AtendimentoServiceTest {
 
         private Servico servico(String valor) {
                 Servico servico = new Servico();
+                servico.setClinica(CLINICA);
                 servico.setNome("Limpeza de Pele");
                 servico.setValor(new BigDecimal(valor));
                 ReflectionTestUtils.setField(servico, "id", SERVICO_ID);
@@ -85,6 +97,7 @@ class AtendimentoServiceTest {
 
         private Item item(String estoqueInicial) {
                 Item item = new Item();
+                item.setClinica(CLINICA);
                 item.setNome("Sérum Vitamina C");
                 item.adicionarQuantidade(new BigDecimal(estoqueInicial));
                 ReflectionTestUtils.setField(item, "id", ITEM_ID);
@@ -93,6 +106,7 @@ class AtendimentoServiceTest {
 
         private Atendimento atendimentoComStatus(StatusAtendimento status) {
                 Atendimento atendimento = new Atendimento();
+                atendimento.setClinica(CLINICA);
                 atendimento.setCliente(cliente(CLIENTE_ID, "Maria"));
                 atendimento.setDataAtendimento(LocalDateTime.now().plusDays(1));
                 atendimento.setStatus(status);
@@ -131,14 +145,15 @@ class AtendimentoServiceTest {
                 Servico servico = servico("150.00");
                 Item item = item("10");
 
-                when(clienteRepository.findById(CLIENTE_ID)).thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
-                when(servicoRepository.findById(SERVICO_ID)).thenReturn(Optional.of(servico));
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
+                                .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
+                when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico));
                 when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
-                when(itemRepository.findById(ITEM_ID)).thenReturn(Optional.of(item));
+                when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty());
 
-                var resposta = atendimentoService.createAtendimento(
+                var resposta = atendimentoService.createAtendimento(CLINICA,
                                 requisicaoComUmServicoEItens(new ItemUsadoDTO(ITEM_ID, new BigDecimal("2"))));
 
                 assertThat(resposta.status()).isEqualTo(StatusAtendimento.AGENDADO);
@@ -157,10 +172,11 @@ class AtendimentoServiceTest {
                 Item item = item("10");
                 AtomicReference<AtendimentoItem> salvo = new AtomicReference<>();
 
-                when(clienteRepository.findById(CLIENTE_ID)).thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
-                when(servicoRepository.findById(SERVICO_ID)).thenReturn(Optional.of(servico("100.00")));
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
+                                .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
+                when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
                 when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
-                when(itemRepository.findById(ITEM_ID)).thenReturn(Optional.of(item));
+                when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty())
                                 .thenAnswer(invocacao -> Optional.ofNullable(salvo.get()));
@@ -170,7 +186,7 @@ class AtendimentoServiceTest {
                                         return salvo.get();
                                 });
 
-                var resposta = atendimentoService.createAtendimento(requisicaoComUmServicoEItens(
+                var resposta = atendimentoService.createAtendimento(CLINICA, requisicaoComUmServicoEItens(
                                 new ItemUsadoDTO(ITEM_ID, BigDecimal.ONE),
                                 new ItemUsadoDTO(ITEM_ID, new BigDecimal("2"))));
 
@@ -182,9 +198,9 @@ class AtendimentoServiceTest {
 
         @Test
         void naoDeveCriarAtendimentoComClienteInexistente() {
-                when(clienteRepository.findById(CLIENTE_ID)).thenReturn(Optional.empty());
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA)).thenReturn(Optional.empty());
 
-                assertThatThrownBy(() -> atendimentoService.createAtendimento(
+                assertThatThrownBy(() -> atendimentoService.createAtendimento(CLINICA,
                                 requisicaoComUmServicoEItens(new ItemUsadoDTO(ITEM_ID, BigDecimal.ONE))))
                                 .isInstanceOf(RecursoNaoEncontradoException.class)
                                 .hasMessageContaining("Cliente");
@@ -192,10 +208,11 @@ class AtendimentoServiceTest {
 
         @Test
         void naoDeveCriarAtendimentoComServicoInexistente() {
-                when(clienteRepository.findById(CLIENTE_ID)).thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
-                when(servicoRepository.findById(SERVICO_ID)).thenReturn(Optional.empty());
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
+                                .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
+                when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.empty());
 
-                assertThatThrownBy(() -> atendimentoService.createAtendimento(
+                assertThatThrownBy(() -> atendimentoService.createAtendimento(CLINICA,
                                 requisicaoComUmServicoEItens(new ItemUsadoDTO(ITEM_ID, BigDecimal.ONE))))
                                 .isInstanceOf(RecursoNaoEncontradoException.class)
                                 .hasMessageContaining("Serviço");
@@ -203,12 +220,13 @@ class AtendimentoServiceTest {
 
         @Test
         void naoDeveCriarAtendimentoComItemInexistente() {
-                when(clienteRepository.findById(CLIENTE_ID)).thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
-                when(servicoRepository.findById(SERVICO_ID)).thenReturn(Optional.of(servico("100.00")));
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
+                                .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
+                when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
                 when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
-                when(itemRepository.findById(ITEM_ID)).thenReturn(Optional.empty());
+                when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.empty());
 
-                assertThatThrownBy(() -> atendimentoService.createAtendimento(
+                assertThatThrownBy(() -> atendimentoService.createAtendimento(CLINICA,
                                 requisicaoComUmServicoEItens(new ItemUsadoDTO(ITEM_ID, BigDecimal.ONE))))
                                 .isInstanceOf(RecursoNaoEncontradoException.class)
                                 .hasMessageContaining("Item");
@@ -216,8 +234,9 @@ class AtendimentoServiceTest {
 
         @Test
         void naoDeveAceitarOMesmoServicoDuasVezesNoAtendimento() {
-                when(clienteRepository.findById(CLIENTE_ID)).thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
-                when(servicoRepository.findById(SERVICO_ID)).thenReturn(Optional.of(servico("100.00")));
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
+                                .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
+                when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
                 when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any()))
                                 .thenReturn(false, true);
 
@@ -228,7 +247,7 @@ class AtendimentoServiceTest {
                                                 new ServicoSelecionadoDTO(SERVICO_ID, List.of()),
                                                 new ServicoSelecionadoDTO(SERVICO_ID, List.of())));
 
-                assertThatThrownBy(() -> atendimentoService.createAtendimento(requisicao))
+                assertThatThrownBy(() -> atendimentoService.createAtendimento(CLINICA, requisicao))
                                 .isInstanceOf(RecursoDuplicadoException.class);
         }
 
@@ -236,14 +255,15 @@ class AtendimentoServiceTest {
         void naoDeveCriarAtendimentoSemEstoqueSuficiente() {
                 Item item = item("1");
 
-                when(clienteRepository.findById(CLIENTE_ID)).thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
-                when(servicoRepository.findById(SERVICO_ID)).thenReturn(Optional.of(servico("100.00")));
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
+                                .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
+                when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
                 when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
-                when(itemRepository.findById(ITEM_ID)).thenReturn(Optional.of(item));
+                when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty());
 
-                assertThatThrownBy(() -> atendimentoService.createAtendimento(
+                assertThatThrownBy(() -> atendimentoService.createAtendimento(CLINICA,
                                 requisicaoComUmServicoEItens(new ItemUsadoDTO(ITEM_ID, new BigDecimal("5")))))
                                 .isInstanceOf(EstoqueInsuficienteException.class);
 
@@ -255,9 +275,10 @@ class AtendimentoServiceTest {
         @Test
         void deveConcluirAtendimentoAgendado() {
                 Atendimento atendimento = atendimentoComStatus(StatusAtendimento.AGENDADO);
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(atendimento));
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(atendimento));
 
-                var resposta = atendimentoService.alterarStatus(ATENDIMENTO_ID, StatusAtendimento.CONCLUIDO);
+                var resposta = atendimentoService.alterarStatus(CLINICA, ATENDIMENTO_ID, StatusAtendimento.CONCLUIDO);
 
                 assertThat(resposta.status()).isEqualTo(StatusAtendimento.CONCLUIDO);
                 verify(itemRepository, never()).save(any());
@@ -270,11 +291,12 @@ class AtendimentoServiceTest {
                 AtendimentoItem consumo = atendimentoItem(
                                 atendimentoServico(atendimento, "100.00"), item, "2");
 
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(atendimento));
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(atendimento));
                 when(atendimentoItemRepository.findByAtendimentoServico_Atendimento(atendimento))
                                 .thenReturn(List.of(consumo));
 
-                var resposta = atendimentoService.alterarStatus(ATENDIMENTO_ID, StatusAtendimento.CANCELADO);
+                var resposta = atendimentoService.alterarStatus(CLINICA, ATENDIMENTO_ID, StatusAtendimento.CANCELADO);
 
                 assertThat(resposta.status()).isEqualTo(StatusAtendimento.CANCELADO);
                 assertThat(item.getQuantidadeEmEstoque()).isEqualByComparingTo("7");
@@ -285,9 +307,10 @@ class AtendimentoServiceTest {
         void correcaoDeConcluidoParaCanceladoNaoDeveDevolverEstoque() {
                 Atendimento atendimento = atendimentoComStatus(StatusAtendimento.CONCLUIDO);
 
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(atendimento));
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(atendimento));
 
-                var resposta = atendimentoService.alterarStatus(ATENDIMENTO_ID, StatusAtendimento.CANCELADO);
+                var resposta = atendimentoService.alterarStatus(CLINICA, ATENDIMENTO_ID, StatusAtendimento.CANCELADO);
 
                 assertThat(resposta.status()).isEqualTo(StatusAtendimento.CANCELADO);
                 verify(itemRepository, never()).save(any());
@@ -296,9 +319,11 @@ class AtendimentoServiceTest {
         @Test
         void canceladoEDefinitivoENaoPodeVoltar() {
                 Atendimento cancelado = atendimentoComStatus(StatusAtendimento.CANCELADO);
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(cancelado));
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(cancelado));
 
-                assertThatThrownBy(() -> atendimentoService.alterarStatus(ATENDIMENTO_ID, StatusAtendimento.AGENDADO))
+                assertThatThrownBy(() -> atendimentoService.alterarStatus(CLINICA, ATENDIMENTO_ID,
+                                StatusAtendimento.AGENDADO))
                                 .isInstanceOf(TransicaoStatusInvalidaException.class)
                                 .hasMessageContaining("cancelado");
         }
@@ -306,17 +331,31 @@ class AtendimentoServiceTest {
         @Test
         void naoDeveAlterarParaOMesmoStatusAtual() {
                 Atendimento agendado = atendimentoComStatus(StatusAtendimento.AGENDADO);
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(agendado));
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(agendado));
 
-                assertThatThrownBy(() -> atendimentoService.alterarStatus(ATENDIMENTO_ID, StatusAtendimento.AGENDADO))
+                assertThatThrownBy(() -> atendimentoService.alterarStatus(CLINICA, ATENDIMENTO_ID,
+                                StatusAtendimento.AGENDADO))
                                 .isInstanceOf(TransicaoStatusInvalidaException.class);
         }
 
         @Test
         void naoDeveAlterarStatusDeAtendimentoInexistente() {
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.empty());
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.empty());
 
-                assertThatThrownBy(() -> atendimentoService.alterarStatus(ATENDIMENTO_ID, StatusAtendimento.CONCLUIDO))
+                assertThatThrownBy(() -> atendimentoService.alterarStatus(CLINICA, ATENDIMENTO_ID,
+                                StatusAtendimento.CONCLUIDO))
+                                .isInstanceOf(RecursoNaoEncontradoException.class);
+        }
+
+        @Test
+        void naoDeveAlterarAtendimentoDeOutraClinica() {
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.empty());
+
+                assertThatThrownBy(() -> atendimentoService.alterarStatus(CLINICA, ATENDIMENTO_ID,
+                                StatusAtendimento.CONCLUIDO))
                                 .isInstanceOf(RecursoNaoEncontradoException.class);
         }
 
@@ -328,11 +367,12 @@ class AtendimentoServiceTest {
                 UUID novoClienteId = UUID.randomUUID();
                 LocalDateTime novaData = LocalDateTime.now().plusDays(7);
 
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(atendimento));
-                when(clienteRepository.findById(novoClienteId))
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(atendimento));
+                when(clienteRepository.findByIdAndClinica(novoClienteId, CLINICA))
                                 .thenReturn(Optional.of(cliente(novoClienteId, "Joana")));
 
-                atendimentoService.atualizarAtendimento(ATENDIMENTO_ID,
+                atendimentoService.atualizarAtendimento(CLINICA, ATENDIMENTO_ID,
                                 new com.cliniva.atendimento.dtos.UpdateAtendimentoRequestDTO(novoClienteId, novaData));
 
                 assertThat(atendimento.getDataAtendimento()).isEqualTo(novaData);
@@ -343,9 +383,10 @@ class AtendimentoServiceTest {
         @Test
         void naoDeveRemarcarAtendimentoConcluido() {
                 Atendimento concluido = atendimentoComStatus(StatusAtendimento.CONCLUIDO);
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(concluido));
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(concluido));
 
-                assertThatThrownBy(() -> atendimentoService.atualizarAtendimento(ATENDIMENTO_ID,
+                assertThatThrownBy(() -> atendimentoService.atualizarAtendimento(CLINICA, ATENDIMENTO_ID,
                                 new com.cliniva.atendimento.dtos.UpdateAtendimentoRequestDTO(CLIENTE_ID,
                                                 LocalDateTime.now())))
                                 .isInstanceOf(TransicaoStatusInvalidaException.class)
@@ -357,10 +398,11 @@ class AtendimentoServiceTest {
                 Atendimento agendado = atendimentoComStatus(StatusAtendimento.AGENDADO);
                 UUID inexistente = UUID.randomUUID();
 
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(agendado));
-                when(clienteRepository.findById(inexistente)).thenReturn(Optional.empty());
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(agendado));
+                when(clienteRepository.findByIdAndClinica(inexistente, CLINICA)).thenReturn(Optional.empty());
 
-                assertThatThrownBy(() -> atendimentoService.atualizarAtendimento(ATENDIMENTO_ID,
+                assertThatThrownBy(() -> atendimentoService.atualizarAtendimento(CLINICA, ATENDIMENTO_ID,
                                 new com.cliniva.atendimento.dtos.UpdateAtendimentoRequestDTO(inexistente,
                                                 LocalDateTime.now())))
                                 .isInstanceOf(RecursoNaoEncontradoException.class);
@@ -384,7 +426,7 @@ class AtendimentoServiceTest {
                                 .thenReturn(List.of(atendimentoServico(segundo, "25.00")));
 
                 var lista = atendimentoService.listarAtendimentos(
-                                StatusAtendimento.AGENDADO, null, null, null);
+                                CLINICA, StatusAtendimento.AGENDADO, null, null, null);
 
                 assertThat(lista).hasSize(2);
                 assertThat(lista.get(0).nomeCliente()).isEqualTo("Maria");
@@ -399,13 +441,14 @@ class AtendimentoServiceTest {
                 AtendimentoServico atendimentoServico = atendimentoServico(atendimento, "100.00");
                 AtendimentoItem consumo = atendimentoItem(atendimentoServico, item, "3");
 
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.of(atendimento));
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.of(atendimento));
                 when(atendimentoServicoRepository.findByAtendimento(atendimento))
                                 .thenReturn(List.of(atendimentoServico));
                 when(atendimentoItemRepository.findByAtendimentoServico(atendimentoServico))
                                 .thenReturn(List.of(consumo));
 
-                var resposta = atendimentoService.buscarPorId(ATENDIMENTO_ID);
+                var resposta = atendimentoService.buscarPorId(CLINICA, ATENDIMENTO_ID);
 
                 assertThat(resposta.nomeCliente()).isEqualTo("Maria");
                 assertThat(resposta.valorTotal()).isEqualByComparingTo("100.00");
@@ -419,9 +462,10 @@ class AtendimentoServiceTest {
 
         @Test
         void naoDeveBuscarAtendimentoInexistente() {
-                when(atendimentoRepository.findById(ATENDIMENTO_ID)).thenReturn(Optional.empty());
+                when(atendimentoRepository.findByIdAndClinica(ATENDIMENTO_ID, CLINICA))
+                                .thenReturn(Optional.empty());
 
-                assertThatThrownBy(() -> atendimentoService.buscarPorId(ATENDIMENTO_ID))
+                assertThatThrownBy(() -> atendimentoService.buscarPorId(CLINICA, ATENDIMENTO_ID))
                                 .isInstanceOf(RecursoNaoEncontradoException.class);
         }
 }

@@ -36,6 +36,7 @@ import com.cliniva.item.Item;
 import com.cliniva.item.ItemRepository;
 import com.cliniva.servico.Servico;
 import com.cliniva.servico.ServicoRepository;
+import com.cliniva.tenancy.Clinica;
 
 import lombok.RequiredArgsConstructor;
 
@@ -50,11 +51,13 @@ public class AtendimentoService {
         private final ItemRepository itemRepository;
 
         @Transactional
-        public CreateAtendimentoResponseDTO createAtendimento(CreateAtendimentoRequestDTO requestDTO) {
-                Cliente cliente = clienteRepository.findById(requestDTO.clienteId())
+        public CreateAtendimentoResponseDTO createAtendimento(Clinica clinica,
+                        CreateAtendimentoRequestDTO requestDTO) {
+                Cliente cliente = clienteRepository.findByIdAndClinica(requestDTO.clienteId(), clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
 
                 Atendimento atendimento = new Atendimento();
+                atendimento.setClinica(clinica);
                 atendimento.setCliente(cliente);
                 atendimento.setDataAtendimento(requestDTO.dataAtendimento());
                 atendimento.setStatus(StatusAtendimento.AGENDADO);
@@ -63,8 +66,10 @@ public class AtendimentoService {
                 List<ServicoRealizadoDTO> servicosRealizados = new ArrayList<>();
 
                 for (ServicoSelecionadoDTO servicoSelecionado : requestDTO.servicos()) {
-                        Servico servicoEncontrado = servicoRepository.findById(servicoSelecionado.servicoId())
-                                        .orElseThrow(() -> new RecursoNaoEncontradoException("Serviço não encontrado"));
+                        Servico servicoEncontrado = servicoRepository
+                                        .findByIdAndClinica(servicoSelecionado.servicoId(), clinica)
+                                        .orElseThrow(() -> new RecursoNaoEncontradoException(
+                                                        "Serviço não encontrado"));
 
                         if (atendimentoServicoRepository.existsByAtendimentoAndServico(atendimento,
                                         servicoEncontrado)) {
@@ -80,7 +85,8 @@ public class AtendimentoService {
                         List<ItemUsadoRealDTO> itensRealizados = new ArrayList<>();
 
                         for (ItemUsadoDTO itemUsadoDTO : servicoSelecionado.itensExtras()) {
-                                Item itemEncontrado = itemRepository.findById(itemUsadoDTO.itemId())
+                                Item itemEncontrado = itemRepository.findByIdAndClinica(itemUsadoDTO.itemId(),
+                                                clinica)
                                                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                                                                 "Item não encontrado"));
 
@@ -126,8 +132,8 @@ public class AtendimentoService {
         }
 
         @Transactional
-        public AtendimentoResponseDTO alterarStatus(UUID id, StatusAtendimento novoStatus) {
-                Atendimento atendimento = atendimentoRepository.findById(id)
+        public AtendimentoResponseDTO alterarStatus(Clinica clinica, UUID id, StatusAtendimento novoStatus) {
+                Atendimento atendimento = atendimentoRepository.findByIdAndClinica(id, clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Atendimento não encontrado"));
 
                 // CANCELADO é o único estado terminal
@@ -149,12 +155,13 @@ public class AtendimentoService {
                 atendimento.setStatus(novoStatus);
                 atendimentoRepository.save(atendimento);
 
-                return buscarPorId(id);
+                return buscarPorId(clinica, id);
         }
 
         @Transactional
-        public AtendimentoResponseDTO atualizarAtendimento(UUID id, UpdateAtendimentoRequestDTO requestDTO) {
-                Atendimento atendimento = atendimentoRepository.findById(id)
+        public AtendimentoResponseDTO atualizarAtendimento(Clinica clinica, UUID id,
+                        UpdateAtendimentoRequestDTO requestDTO) {
+                Atendimento atendimento = atendimentoRepository.findByIdAndClinica(id, clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Atendimento não encontrado"));
 
                 if (atendimento.getStatus() != StatusAtendimento.AGENDADO) {
@@ -162,14 +169,14 @@ public class AtendimentoService {
                                         "Somente atendimentos com status AGENDADO podem ser alterados");
                 }
 
-                Cliente cliente = clienteRepository.findById(requestDTO.clienteId())
+                Cliente cliente = clienteRepository.findByIdAndClinica(requestDTO.clienteId(), clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
 
                 atendimento.setCliente(cliente);
                 atendimento.setDataAtendimento(requestDTO.dataAtendimento());
                 atendimentoRepository.save(atendimento);
 
-                return buscarPorId(id);
+                return buscarPorId(clinica, id);
         }
 
         // cancelamento devolve ao estoque o que foi consumido nos serviços do
@@ -186,9 +193,11 @@ public class AtendimentoService {
         }
 
         @Transactional(readOnly = true)
-        public List<AtendimentoResumoResponseDTO> listarAtendimentos(StatusAtendimento status, UUID clienteId,
+        public List<AtendimentoResumoResponseDTO> listarAtendimentos(Clinica clinica, StatusAtendimento status,
+                        UUID clienteId,
                         LocalDateTime dataInicio, LocalDateTime dataFim) {
-                Specification<Atendimento> specification = AtendimentoSpecifications.comFiltros(status, clienteId,
+                Specification<Atendimento> specification = AtendimentoSpecifications.comFiltros(clinica, status,
+                                clienteId,
                                 dataInicio, dataFim);
 
                 return atendimentoRepository.findAll(specification).stream()
@@ -197,8 +206,8 @@ public class AtendimentoService {
         }
 
         @Transactional(readOnly = true)
-        public AtendimentoResponseDTO buscarPorId(UUID id) {
-                Atendimento atendimento = atendimentoRepository.findById(id)
+        public AtendimentoResponseDTO buscarPorId(Clinica clinica, UUID id) {
+                Atendimento atendimento = atendimentoRepository.findByIdAndClinica(id, clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Atendimento não encontrado"));
 
                 List<AtendimentoResponseDTO.ServicoRealizadoDTO> servicos = atendimentoServicoRepository

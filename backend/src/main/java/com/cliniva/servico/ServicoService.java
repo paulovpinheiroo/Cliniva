@@ -14,6 +14,7 @@ import com.cliniva.servico.dtos.CreateServicoRequestDTO;
 import com.cliniva.servico.dtos.CreateServicoResponseDTO;
 import com.cliniva.servico.dtos.ServicoResponseDTO;
 import com.cliniva.servico.dtos.UpdateServicoRequestDTO;
+import com.cliniva.tenancy.Clinica;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,11 +24,12 @@ public class ServicoService {
     private final ServicoRepository servicoRepository;
     private final AtendimentoServicoRepository atendimentoServicoRepository;
 
-    public CreateServicoResponseDTO createServico(CreateServicoRequestDTO requestDTO) {
-        if (servicoRepository.existsByNome(requestDTO.nome())) {
+    public CreateServicoResponseDTO createServico(Clinica clinica, CreateServicoRequestDTO requestDTO) {
+        if (servicoRepository.existsByNomeAndClinica(requestDTO.nome(), clinica)) {
             throw new RecursoDuplicadoException("Serviço com nome já existe");
         }
         Servico servico = new Servico();
+        servico.setClinica(clinica);
         servico.setNome(requestDTO.nome());
         servico.setDescricao(requestDTO.descricao());
         servico.setValor(requestDTO.valor());
@@ -37,23 +39,23 @@ public class ServicoService {
     }
 
     @Transactional(readOnly = true)
-    public List<ServicoResponseDTO> listarServicos() {
-        return servicoRepository.findAll().stream().map(this::toResponseDTO).toList();
+    public List<ServicoResponseDTO> listarServicos(Clinica clinica) {
+        return servicoRepository.findByClinica(clinica).stream().map(this::toResponseDTO).toList();
     }
 
     @Transactional(readOnly = true)
-    public ServicoResponseDTO buscarPorId(UUID id) {
-        Servico servico = servicoRepository.findById(id)
+    public ServicoResponseDTO buscarPorId(Clinica clinica, UUID id) {
+        Servico servico = servicoRepository.findByIdAndClinica(id, clinica)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Serviço não encontrado"));
         return toResponseDTO(servico);
     }
 
     @Transactional
-    public ServicoResponseDTO atualizarServico(UUID id, UpdateServicoRequestDTO requestDTO) {
-        Servico servico = servicoRepository.findById(id)
+    public ServicoResponseDTO atualizarServico(Clinica clinica, UUID id, UpdateServicoRequestDTO requestDTO) {
+        Servico servico = servicoRepository.findByIdAndClinica(id, clinica)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Serviço não encontrado"));
 
-        if (servicoRepository.existsByNomeAndIdNot(requestDTO.nome(), id)) {
+        if (servicoRepository.existsByNomeAndIdNotAndClinica(requestDTO.nome(), id, clinica)) {
             throw new RecursoDuplicadoException("Serviço com nome já existe");
         }
 
@@ -65,8 +67,8 @@ public class ServicoService {
     }
 
     @Transactional
-    public void deletarServico(UUID id) {
-        if (!servicoRepository.existsById(id)) {
+    public void deletarServico(Clinica clinica, UUID id) {
+        if (!servicoRepository.existsByIdAndClinica(id, clinica)) {
             throw new RecursoNaoEncontradoException("Serviço não encontrado");
         }
         if (atendimentoServicoRepository.existsByServico_Id(id)) {

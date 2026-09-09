@@ -24,6 +24,7 @@ import com.cliniva.exception.RecursoEmUsoException;
 import com.cliniva.exception.RecursoNaoEncontradoException;
 import com.cliniva.servico.dtos.CreateServicoRequestDTO;
 import com.cliniva.servico.dtos.UpdateServicoRequestDTO;
+import com.cliniva.tenancy.Clinica;
 
 @ExtendWith(MockitoExtension.class)
 class ServicoServiceTest {
@@ -37,8 +38,18 @@ class ServicoServiceTest {
     @InjectMocks
     private ServicoService servicoService;
 
+    private static final Clinica CLINICA = clinica("Clínica A");
+
+    private static Clinica clinica(String nome) {
+        Clinica clinica = new Clinica();
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "nome", nome);
+        return clinica;
+    }
+
     private Servico servico(UUID id, String nome, String valor) {
         Servico servico = new Servico();
+        servico.setClinica(CLINICA);
         servico.setNome(nome);
         servico.setValor(new BigDecimal(valor));
         if (id != null) {
@@ -49,11 +60,11 @@ class ServicoServiceTest {
 
     @Test
     void deveCriarServicoComDadosValidos() {
-        when(servicoRepository.existsByNome("Limpeza de Pele")).thenReturn(false);
+        when(servicoRepository.existsByNomeAndClinica("Limpeza de Pele", CLINICA)).thenReturn(false);
         when(servicoRepository.save(any(Servico.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = servicoService.createServico(new CreateServicoRequestDTO(
+        var resposta = servicoService.createServico(CLINICA, new CreateServicoRequestDTO(
                 "Limpeza de Pele", "limpeza profunda", new BigDecimal("120.00")));
 
         assertThat(resposta.nome()).isEqualTo("Limpeza de Pele");
@@ -62,9 +73,9 @@ class ServicoServiceTest {
 
     @Test
     void naoDeveCriarServicoComNomeDuplicado() {
-        when(servicoRepository.existsByNome("Limpeza de Pele")).thenReturn(true);
+        when(servicoRepository.existsByNomeAndClinica("Limpeza de Pele", CLINICA)).thenReturn(true);
 
-        assertThatThrownBy(() -> servicoService.createServico(
+        assertThatThrownBy(() -> servicoService.createServico(CLINICA,
                 new CreateServicoRequestDTO("Limpeza de Pele", null, new BigDecimal("120.00"))))
                 .isInstanceOf(RecursoDuplicadoException.class);
 
@@ -73,10 +84,10 @@ class ServicoServiceTest {
 
     @Test
     void deveListarServicos() {
-        when(servicoRepository.findAll())
+        when(servicoRepository.findByClinica(CLINICA))
                 .thenReturn(List.of(servico(null, "Massagem", "90.00")));
 
-        var lista = servicoService.listarServicos();
+        var lista = servicoService.listarServicos(CLINICA);
 
         assertThat(lista).hasSize(1);
         assertThat(lista.get(0).nome()).isEqualTo("Massagem");
@@ -85,35 +96,37 @@ class ServicoServiceTest {
     @Test
     void naoDeveBuscarServicoInexistente() {
         UUID id = UUID.randomUUID();
-        when(servicoRepository.findById(id)).thenReturn(Optional.empty());
+        when(servicoRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> servicoService.buscarPorId(id))
+        assertThatThrownBy(() -> servicoService.buscarPorId(CLINICA, id))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
     @Test
     void naoDeveAtualizarComNomeUsadoPorOutroServico() {
         UUID id = UUID.randomUUID();
-        when(servicoRepository.findById(id))
+        when(servicoRepository.findByIdAndClinica(id, CLINICA))
                 .thenReturn(Optional.of(servico(id, "Massagem", "90.00")));
-        when(servicoRepository.existsByNomeAndIdNot("Drenagem", id)).thenReturn(true);
+        when(servicoRepository.existsByNomeAndIdNotAndClinica("Drenagem", id, CLINICA)).thenReturn(true);
 
         assertThatThrownBy(() -> servicoService.atualizarServico(
-                id, new UpdateServicoRequestDTO("Drenagem", null, new BigDecimal("100.00"))))
+                CLINICA, id, new UpdateServicoRequestDTO("Drenagem", null, new BigDecimal("100.00"))))
                 .isInstanceOf(RecursoDuplicadoException.class);
     }
 
     @Test
     void deveAtualizarServicoComDadosValidos() {
         UUID id = UUID.randomUUID();
-        when(servicoRepository.findById(id))
+        when(servicoRepository.findByIdAndClinica(id, CLINICA))
                 .thenReturn(Optional.of(servico(id, "Massagem", "90.00")));
-        when(servicoRepository.existsByNomeAndIdNot("Massagem Relaxante", id)).thenReturn(false);
+        when(servicoRepository.existsByNomeAndIdNotAndClinica("Massagem Relaxante", id, CLINICA))
+                .thenReturn(false);
         when(servicoRepository.save(any(Servico.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
         var resposta = servicoService.atualizarServico(
-                id, new UpdateServicoRequestDTO("Massagem Relaxante", "com óleos", new BigDecimal("110.00")));
+                CLINICA, id, new UpdateServicoRequestDTO("Massagem Relaxante", "com óleos",
+                        new BigDecimal("110.00")));
 
         assertThat(resposta.nome()).isEqualTo("Massagem Relaxante");
         assertThat(resposta.valor()).isEqualByComparingTo("110.00");
@@ -122,10 +135,10 @@ class ServicoServiceTest {
     @Test
     void naoDeveDeletarServicoUsadoEmAtendimentos() {
         UUID id = UUID.randomUUID();
-        when(servicoRepository.existsById(id)).thenReturn(true);
+        when(servicoRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(true);
         when(atendimentoServicoRepository.existsByServico_Id(id)).thenReturn(true);
 
-        assertThatThrownBy(() -> servicoService.deletarServico(id))
+        assertThatThrownBy(() -> servicoService.deletarServico(CLINICA, id))
                 .isInstanceOf(RecursoEmUsoException.class);
 
         verify(servicoRepository, never()).deleteById(any());
@@ -134,10 +147,10 @@ class ServicoServiceTest {
     @Test
     void deveDeletarServicoSemVinculos() {
         UUID id = UUID.randomUUID();
-        when(servicoRepository.existsById(id)).thenReturn(true);
+        when(servicoRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(true);
         when(atendimentoServicoRepository.existsByServico_Id(id)).thenReturn(false);
 
-        servicoService.deletarServico(id);
+        servicoService.deletarServico(CLINICA, id);
 
         verify(servicoRepository).deleteById(id);
     }

@@ -9,12 +9,14 @@ import org.springframework.data.jpa.domain.Specification;
 
 import com.cliniva.atendimento.enums.StatusAtendimento;
 import com.cliniva.atendimento.model.Atendimento;
+import com.cliniva.tenancy.Clinica;
 
 public class AtendimentoSpecifications {
 
-    public static Specification<Atendimento> comFiltros(StatusAtendimento status, UUID clienteId,
+    public static Specification<Atendimento> comFiltros(Clinica clinica, StatusAtendimento status, UUID clienteId,
             LocalDateTime dataInicio, LocalDateTime dataFim) {
         List<Specification<Atendimento>> especificacoes = new ArrayList<>();
+        especificacoes.add(comClinica(clinica));
 
         if (status != null) {
             especificacoes.add(comStatus(status));
@@ -27,6 +29,10 @@ public class AtendimentoSpecifications {
         }
 
         return Specification.allOf(especificacoes);
+    }
+
+    private static Specification<Atendimento> comClinica(Clinica clinica) {
+        return (root, query, builder) -> builder.equal(root.get("clinica").get("id"), clinica.getId());
     }
 
     private static Specification<Atendimento> comStatus(StatusAtendimento status) {

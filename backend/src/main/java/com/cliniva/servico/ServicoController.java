@@ -18,6 +18,7 @@ import com.cliniva.servico.dtos.CreateServicoRequestDTO;
 import com.cliniva.servico.dtos.CreateServicoResponseDTO;
 import com.cliniva.servico.dtos.ServicoResponseDTO;
 import com.cliniva.servico.dtos.UpdateServicoRequestDTO;
+import com.cliniva.tenancy.ClinicaContext;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,33 +28,34 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ServicoController {
     private final ServicoService servicoService;
+    private final ClinicaContext clinicaContext;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateServicoResponseDTO createServico(@Valid @RequestBody CreateServicoRequestDTO requestDTO) {
-        return servicoService.createServico(requestDTO);
+        return servicoService.createServico(clinicaContext.obterClinicaAtual(), requestDTO);
     }
 
     @GetMapping
     public List<ServicoResponseDTO> listarServicos() {
-        return servicoService.listarServicos();
+        return servicoService.listarServicos(clinicaContext.obterClinicaAtual());
     }
 
     @GetMapping("/{id}")
     public ServicoResponseDTO buscarPorId(@PathVariable UUID id) {
-        return servicoService.buscarPorId(id);
+        return servicoService.buscarPorId(clinicaContext.obterClinicaAtual(), id);
     }
 
     @PutMapping("/{id}")
     public ServicoResponseDTO atualizarServico(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateServicoRequestDTO requestDTO) {
-        return servicoService.atualizarServico(id, requestDTO);
+        return servicoService.atualizarServico(clinicaContext.obterClinicaAtual(), id, requestDTO);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletarServico(@PathVariable UUID id) {
-        servicoService.deletarServico(id);
+        servicoService.deletarServico(clinicaContext.obterClinicaAtual(), id);
     }
 }

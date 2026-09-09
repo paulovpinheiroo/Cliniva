@@ -19,6 +19,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
     }
 
+    @ExceptionHandler(AcessoNaoPermitidoException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleAcessoNaoPermitido(AcessoNaoPermitidoException ex) {
+        return new ErrorResponse(HttpStatus.FORBIDDEN.value(), ex.getMessage());
+    }
+
     @ExceptionHandler({ RecursoDuplicadoException.class, EstoqueInsuficienteException.class,
             TransicaoStatusInvalidaException.class, RecursoEmUsoException.class })
     @ResponseStatus(HttpStatus.CONFLICT)

@@ -23,6 +23,7 @@ import com.cliniva.cliente.dtos.CreateClienteResponseDTO;
 import com.cliniva.cliente.dtos.NotaResponseDTO;
 import com.cliniva.cliente.dtos.UpdateClienteRequestDTO;
 import com.cliniva.cliente.enums.ClienteStatus;
+import com.cliniva.tenancy.ClinicaContext;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,40 +33,41 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ClienteController {
     private final ClienteService clienteService;
+    private final ClinicaContext clinicaContext;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CreateClienteResponseDTO createCliente(
                     @Valid @RequestBody CreateClienteRequestDTO createClienteRequestDTO) {
-        return clienteService.createCliente(createClienteRequestDTO);
+        return clienteService.createCliente(clinicaContext.obterClinicaAtual(), createClienteRequestDTO);
     }
 
     @GetMapping
     public List<ClienteResponseDTO> listarClientes(
                     @RequestParam(required = false) String nome,
                     @RequestParam(required = false) ClienteStatus status) {
-        return clienteService.listarClientes(nome, status);
+        return clienteService.listarClientes(clinicaContext.obterClinicaAtual(), nome, status);
     }
 
     @GetMapping("/aniversariantes")
     public List<ClienteResponseDTO> aniversariantes(
                     @RequestParam(required = false) Integer mes) {
-        return clienteService.aniversariantes(mes);
+        return clienteService.aniversariantes(clinicaContext.obterClinicaAtual(), mes);
     }
 
     @GetMapping("/{id}")
     public ClienteResponseDTO buscarPorId(@PathVariable UUID id) {
-        return clienteService.buscarPorId(id);
+        return clienteService.buscarPorId(clinicaContext.obterClinicaAtual(), id);
     }
 
     @GetMapping("/{id}/historico")
     public ClienteHistoricoResponseDTO historico(@PathVariable UUID id) {
-        return clienteService.historicoCliente(id);
+        return clienteService.historicoCliente(clinicaContext.obterClinicaAtual(), id);
     }
 
     @GetMapping("/{id}/notas")
     public List<NotaResponseDTO> listarNotas(@PathVariable UUID id) {
-        return clienteService.listarNotas(id);
+        return clienteService.listarNotas(clinicaContext.obterClinicaAtual(), id);
     }
 
     @PostMapping("/{id}/notas")
@@ -73,26 +75,26 @@ public class ClienteController {
     public NotaResponseDTO criarNota(
                     @PathVariable UUID id,
                     @Valid @RequestBody CreateClienteNotaRequestDTO requestDTO) {
-        return clienteService.criarNota(id, requestDTO);
+        return clienteService.criarNota(clinicaContext.obterClinicaAtual(), id, requestDTO);
     }
 
     @DeleteMapping("/{id}/notas/{notaId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletarNota(@PathVariable UUID id, @PathVariable UUID notaId) {
-        clienteService.deletarNota(id, notaId);
+        clienteService.deletarNota(clinicaContext.obterClinicaAtual(), id, notaId);
     }
 
     @PutMapping("/{id}")
     public ClienteResponseDTO atualizarCliente(
                     @PathVariable UUID id,
                     @Valid @RequestBody UpdateClienteRequestDTO requestDTO) {
-        return clienteService.atualizarCliente(id, requestDTO);
+        return clienteService.atualizarCliente(clinicaContext.obterClinicaAtual(), id, requestDTO);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletarCliente(@PathVariable UUID id) {
-        clienteService.deletarCliente(id);
+        clienteService.deletarCliente(clinicaContext.obterClinicaAtual(), id);
     }
 
 }

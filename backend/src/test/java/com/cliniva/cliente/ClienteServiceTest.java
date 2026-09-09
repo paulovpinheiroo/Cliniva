@@ -3,6 +3,7 @@ package com.cliniva.cliente;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +37,7 @@ import com.cliniva.cliente.enums.OrigemCliente;
 import com.cliniva.exception.RecursoDuplicadoException;
 import com.cliniva.exception.RecursoEmUsoException;
 import com.cliniva.exception.RecursoNaoEncontradoException;
+import com.cliniva.tenancy.Clinica;
 
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
@@ -57,8 +59,20 @@ class ClienteServiceTest {
 
     private static final ClienteStatus STATUS_DEFAULT = ClienteStatus.PROSPECT;
 
+    private static final Clinica CLINICA = clinica("Clínica A");
+
+    private static final Clinica CLINICA_B = clinica("Clínica B");
+
+    private static Clinica clinica(String nome) {
+        Clinica clinica = new Clinica();
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "nome", nome);
+        return clinica;
+    }
+
     private Cliente cliente(UUID id, String nome, String email, String telefone) {
         Cliente cliente = new Cliente();
+        cliente.setClinica(CLINICA);
         cliente.setNome(nome);
         cliente.setEmail(email);
         cliente.setTelefone(telefone);
@@ -100,12 +114,12 @@ class ClienteServiceTest {
 
     @Test
     void deveCriarClienteComDadosValidos() {
-        when(clienteRepository.existsByEmail("maria@email.com")).thenReturn(false);
-        when(clienteRepository.existsByTelefone("11999990000")).thenReturn(false);
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = clienteService.createCliente(requestCriacaoBasico());
+        var resposta = clienteService.createCliente(CLINICA, requestCriacaoBasico());
 
         assertThat(resposta.nome()).isEqualTo("Maria");
         assertThat(resposta.email()).isEqualTo("maria@email.com");
@@ -114,12 +128,12 @@ class ClienteServiceTest {
 
     @Test
     void deveCriarClienteComPerfilCompletoEStatusProspect() {
-        when(clienteRepository.existsByEmail("maria@email.com")).thenReturn(false);
-        when(clienteRepository.existsByTelefone("11999990000")).thenReturn(false);
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = clienteService.createCliente(requestCriacaoCompleto());
+        var resposta = clienteService.createCliente(CLINICA, requestCriacaoCompleto());
 
         assertThat(resposta.dataNascimento()).isEqualTo(LocalDate.of(1990, 5, 10));
         assertThat(resposta.origem()).isEqualTo(OrigemCliente.INSTAGRAM);
@@ -131,23 +145,24 @@ class ClienteServiceTest {
 
     @Test
     void deveSalvarClienteComStatusProspectPorPadrao() {
-        when(clienteRepository.existsByEmail("maria@email.com")).thenReturn(false);
-        when(clienteRepository.existsByTelefone("11999990000")).thenReturn(false);
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        clienteService.createCliente(requestCriacaoBasico());
+        clienteService.createCliente(CLINICA, requestCriacaoBasico());
 
         ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
         verify(clienteRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(STATUS_DEFAULT);
+        assertThat(captor.getValue().getClinica()).isEqualTo(CLINICA);
     }
 
     @Test
     void naoDeveCriarClienteComEmailDuplicado() {
-        when(clienteRepository.existsByEmail("maria@email.com")).thenReturn(true);
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(true);
 
-        assertThatThrownBy(() -> clienteService.createCliente(requestCriacaoBasico()))
+        assertThatThrownBy(() -> clienteService.createCliente(CLINICA, requestCriacaoBasico()))
                 .isInstanceOf(RecursoDuplicadoException.class)
                 .hasMessageContaining("Email");
 
@@ -156,33 +171,50 @@ class ClienteServiceTest {
 
     @Test
     void naoDeveCriarClienteComTelefoneDuplicado() {
-        when(clienteRepository.existsByEmail("maria@email.com")).thenReturn(false);
-        when(clienteRepository.existsByTelefone("11999990000")).thenReturn(true);
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(true);
 
-        assertThatThrownBy(() -> clienteService.createCliente(requestCriacaoBasico()))
+        assertThatThrownBy(() -> clienteService.createCliente(CLINICA, requestCriacaoBasico()))
                 .isInstanceOf(RecursoDuplicadoException.class)
                 .hasMessageContaining("Telefone");
     }
 
     @Test
+    void devePermitirMesmoEmailEmClinicasDiferentes() {
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA_B)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA_B)).thenReturn(false);
+        when(clienteRepository.save(any(Cliente.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        clienteService.createCliente(CLINICA, requestCriacaoBasico());
+        var resposta = clienteService.createCliente(CLINICA_B, requestCriacaoBasico());
+
+        assertThat(resposta.email()).isEqualTo("maria@email.com");
+        verify(clienteRepository).existsByEmailAndClinica("maria@email.com", CLINICA);
+        verify(clienteRepository).existsByEmailAndClinica("maria@email.com", CLINICA_B);
+    }
+
+    @Test
     void deveListarSemFiltroQuandoNadaInformado() {
-        when(clienteRepository.findAll())
+        when(clienteRepository.findByClinica(CLINICA))
                 .thenReturn(List.of(cliente(null, "Maria", null, "111")));
 
-        var lista = clienteService.listarClientes(null, null);
+        var lista = clienteService.listarClientes(CLINICA, null, null);
 
         assertThat(lista).hasSize(1);
         assertThat(lista.get(0).nome()).isEqualTo("Maria");
-        verify(clienteRepository, never()).findByNomeContainingIgnoreCase(any());
-        verify(clienteRepository, never()).findByStatus(any());
+        verify(clienteRepository, never()).findByClinicaAndNomeContainingIgnoreCase(any(), any());
+        verify(clienteRepository, never()).findByClinicaAndStatus(any(), any());
     }
 
     @Test
     void deveListarFiltrandoPorNome() {
-        when(clienteRepository.findByNomeContainingIgnoreCase("mar"))
+        when(clienteRepository.findByClinicaAndNomeContainingIgnoreCase(CLINICA, "mar"))
                 .thenReturn(List.of(cliente(null, "Maria", null, "111")));
 
-        var lista = clienteService.listarClientes("mar", null);
+        var lista = clienteService.listarClientes(CLINICA, "mar", null);
 
         assertThat(lista).hasSize(1);
         assertThat(lista.get(0).nome()).isEqualTo("Maria");
@@ -190,21 +222,22 @@ class ClienteServiceTest {
 
     @Test
     void deveListarFiltrandoPorStatus() {
-        when(clienteRepository.findByStatus(ClienteStatus.ATIVO))
+        when(clienteRepository.findByClinicaAndStatus(CLINICA, ClienteStatus.ATIVO))
                 .thenReturn(List.of(cliente(null, "Maria", null, "111")));
 
-        var lista = clienteService.listarClientes(null, ClienteStatus.ATIVO);
+        var lista = clienteService.listarClientes(CLINICA, null, ClienteStatus.ATIVO);
 
         assertThat(lista).hasSize(1);
-        verify(clienteRepository, never()).findByNomeContainingIgnoreCaseAndStatus(any(), any());
+        verify(clienteRepository, never()).findByClinicaAndNomeContainingIgnoreCaseAndStatus(any(), any(), any());
     }
 
     @Test
     void deveListarFiltrandoPorNomeEStatus() {
-        when(clienteRepository.findByNomeContainingIgnoreCaseAndStatus("mar", ClienteStatus.ATIVO))
+        when(clienteRepository.findByClinicaAndNomeContainingIgnoreCaseAndStatus(CLINICA, "mar",
+                ClienteStatus.ATIVO))
                 .thenReturn(List.of(cliente(null, "Maria", null, "111")));
 
-        var lista = clienteService.listarClientes("mar", ClienteStatus.ATIVO);
+        var lista = clienteService.listarClientes(CLINICA, "mar", ClienteStatus.ATIVO);
 
         assertThat(lista).hasSize(1);
         assertThat(lista.get(0).nome()).isEqualTo("Maria");
@@ -213,33 +246,33 @@ class ClienteServiceTest {
     @Test
     void naoDeveAtualizarClienteInexistente() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.findById(id)).thenReturn(Optional.empty());
+        when(clienteRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> clienteService.atualizarCliente(id, requestAtualizacaoBasico()))
+        assertThatThrownBy(() -> clienteService.atualizarCliente(CLINICA, id, requestAtualizacaoBasico()))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
     @Test
     void naoDeveAtualizarComEmailUsadoPorOutroCliente() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.findById(id))
+        when(clienteRepository.findByIdAndClinica(id, CLINICA))
                 .thenReturn(Optional.of(cliente(id, "Maria", "velha@email.com", "111")));
-        when(clienteRepository.existsByEmailAndIdNot("outra@email.com", id)).thenReturn(true);
+        when(clienteRepository.existsByEmailAndIdNotAndClinica("outra@email.com", id, CLINICA)).thenReturn(true);
 
         var request = new UpdateClienteRequestDTO("Maria", "outra@email.com", "111", null, null, null, null, null, null);
-        assertThatThrownBy(() -> clienteService.atualizarCliente(id, request))
+        assertThatThrownBy(() -> clienteService.atualizarCliente(CLINICA, id, request))
                 .isInstanceOf(RecursoDuplicadoException.class);
     }
 
     @Test
     void naoDeveAtualizarComTelefoneUsadoPorOutroCliente() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.findById(id))
+        when(clienteRepository.findByIdAndClinica(id, CLINICA))
                 .thenReturn(Optional.of(cliente(id, "Maria", null, "111")));
-        when(clienteRepository.existsByTelefoneAndIdNot("222", id)).thenReturn(true);
+        when(clienteRepository.existsByTelefoneAndIdNotAndClinica("222", id, CLINICA)).thenReturn(true);
 
         var request = new UpdateClienteRequestDTO("Maria", null, "222", null, null, null, null, null, null);
-        assertThatThrownBy(() -> clienteService.atualizarCliente(id, request))
+        assertThatThrownBy(() -> clienteService.atualizarCliente(CLINICA, id, request))
                 .isInstanceOf(RecursoDuplicadoException.class);
     }
 
@@ -247,29 +280,29 @@ class ClienteServiceTest {
     @DisplayName("email em branco não passa pela checagem de duplicidade")
     void atualizacaoSemEmailNaoVerificaDuplicidadeDeEmail() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.findById(id))
+        when(clienteRepository.findByIdAndClinica(id, CLINICA))
                 .thenReturn(Optional.of(cliente(id, "Maria", "velha@email.com", "111")));
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = clienteService.atualizarCliente(id, requestAtualizacaoBasico());
+        var resposta = clienteService.atualizarCliente(CLINICA, id, requestAtualizacaoBasico());
 
         assertThat(resposta.nome()).isEqualTo("Maria");
-        verify(clienteRepository, never()).existsByEmailAndIdNot(any(), any());
+        verify(clienteRepository, never()).existsByEmailAndIdNotAndClinica(any(), any(), any());
     }
 
     @Test
     void deveAtualizarCamposDoPerfilQuandoInformados() {
         UUID id = UUID.randomUUID();
         var existente = cliente(id, "Maria", null, "111");
-        when(clienteRepository.findById(id)).thenReturn(Optional.of(existente));
+        when(clienteRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.of(existente));
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
         var request = new UpdateClienteRequestDTO("Maria", null, "111",
                 LocalDate.of(1988, 3, 15), ClienteStatus.ATIVO, OrigemCliente.GOOGLE,
                 CanalPreferido.INSTAGRAM, "Unhas", "Cliente VIP");
-        var resposta = clienteService.atualizarCliente(id, request);
+        var resposta = clienteService.atualizarCliente(CLINICA, id, request);
 
         assertThat(resposta.status()).isEqualTo(ClienteStatus.ATIVO);
         assertThat(resposta.dataNascimento()).isEqualTo(LocalDate.of(1988, 3, 15));
@@ -282,19 +315,19 @@ class ClienteServiceTest {
     @Test
     void naoDeveDeletarClienteInexistente() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.existsById(id)).thenReturn(false);
+        when(clienteRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(false);
 
-        assertThatThrownBy(() -> clienteService.deletarCliente(id))
+        assertThatThrownBy(() -> clienteService.deletarCliente(CLINICA, id))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
     @Test
     void naoDeveDeletarClienteComAtendimentosVinculados() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.existsById(id)).thenReturn(true);
+        when(clienteRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(true);
         when(atendimentoRepository.existsByCliente_Id(id)).thenReturn(true);
 
-        assertThatThrownBy(() -> clienteService.deletarCliente(id))
+        assertThatThrownBy(() -> clienteService.deletarCliente(CLINICA, id))
                 .isInstanceOf(RecursoEmUsoException.class)
                 .hasMessageContaining("atendimentos");
 
@@ -304,11 +337,11 @@ class ClienteServiceTest {
     @Test
     void naoDeveDeletarClienteComNotasVinculadas() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.existsById(id)).thenReturn(true);
+        when(clienteRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(true);
         when(atendimentoRepository.existsByCliente_Id(id)).thenReturn(false);
         when(clienteNotaRepository.existsByCliente_Id(id)).thenReturn(true);
 
-        assertThatThrownBy(() -> clienteService.deletarCliente(id))
+        assertThatThrownBy(() -> clienteService.deletarCliente(CLINICA, id))
                 .isInstanceOf(RecursoEmUsoException.class)
                 .hasMessageContaining("anotações");
 
@@ -318,24 +351,36 @@ class ClienteServiceTest {
     @Test
     void deveDeletarClienteSemVinculos() {
         UUID id = UUID.randomUUID();
-        when(clienteRepository.existsById(id)).thenReturn(true);
+        when(clienteRepository.existsByIdAndClinica(id, CLINICA)).thenReturn(true);
         when(atendimentoRepository.existsByCliente_Id(id)).thenReturn(false);
         when(clienteNotaRepository.existsByCliente_Id(id)).thenReturn(false);
 
-        clienteService.deletarCliente(id);
+        clienteService.deletarCliente(CLINICA, id);
 
         verify(clienteRepository).deleteById(id);
     }
 
     @Test
+    void naoDeveAcessarClienteDeOutraClinica() {
+        UUID id = UUID.randomUUID();
+        when(clienteRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clienteService.buscarPorId(CLINICA, id))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
+
+        verify(clienteRepository).findByIdAndClinica(id, CLINICA);
+        verify(clienteRepository, never()).findById(eq(id));
+    }
+
+    @Test
     void deveListarNotasDoCliente() {
         UUID clienteId = UUID.randomUUID();
-        when(clienteRepository.findById(clienteId))
+        when(clienteRepository.findByIdAndClinica(clienteId, CLINICA))
                 .thenReturn(Optional.of(cliente(clienteId, "Maria", null, "111")));
         when(clienteNotaRepository.findByCliente_IdOrderByCriadaEmDesc(clienteId))
                 .thenReturn(List.of(nota(UUID.randomUUID(), clienteId, "Prefere segunda-feira")));
 
-        var notas = clienteService.listarNotas(clienteId);
+        var notas = clienteService.listarNotas(CLINICA, clienteId);
 
         assertThat(notas).hasSize(1);
         assertThat(notas.get(0).texto()).isEqualTo("Prefere segunda-feira");
@@ -344,21 +389,21 @@ class ClienteServiceTest {
     @Test
     void naoDeveListarNotasDeClienteInexistente() {
         UUID clienteId = UUID.randomUUID();
-        when(clienteRepository.findById(clienteId)).thenReturn(Optional.empty());
+        when(clienteRepository.findByIdAndClinica(clienteId, CLINICA)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> clienteService.listarNotas(clienteId))
+        assertThatThrownBy(() -> clienteService.listarNotas(CLINICA, clienteId))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
     @Test
     void deveCriarNotaParaCliente() {
         UUID clienteId = UUID.randomUUID();
-        when(clienteRepository.findById(clienteId))
+        when(clienteRepository.findByIdAndClinica(clienteId, CLINICA))
                 .thenReturn(Optional.of(cliente(clienteId, "Maria", null, "111")));
         when(clienteNotaRepository.save(any(ClienteNota.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
-        var resposta = clienteService.criarNota(clienteId,
+        var resposta = clienteService.criarNota(CLINICA, clienteId,
                 new CreateClienteNotaRequestDTO("  Prefere horário da manhã  "));
 
         assertThat(resposta.texto()).isEqualTo("Prefere horário da manhã");
@@ -367,9 +412,9 @@ class ClienteServiceTest {
     @Test
     void naoDeveCriarNotaParaClienteInexistente() {
         UUID clienteId = UUID.randomUUID();
-        when(clienteRepository.findById(clienteId)).thenReturn(Optional.empty());
+        when(clienteRepository.findByIdAndClinica(clienteId, CLINICA)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> clienteService.criarNota(clienteId,
+        assertThatThrownBy(() -> clienteService.criarNota(CLINICA, clienteId,
                 new CreateClienteNotaRequestDTO("Texto")))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
@@ -378,10 +423,10 @@ class ClienteServiceTest {
     void naoDeveDeletarNotaInexistente() {
         UUID clienteId = UUID.randomUUID();
         UUID notaId = UUID.randomUUID();
-        when(clienteRepository.existsById(clienteId)).thenReturn(true);
+        when(clienteRepository.existsByIdAndClinica(clienteId, CLINICA)).thenReturn(true);
         when(clienteNotaRepository.findById(notaId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> clienteService.deletarNota(clienteId, notaId))
+        assertThatThrownBy(() -> clienteService.deletarNota(CLINICA, clienteId, notaId))
                 .isInstanceOf(RecursoNaoEncontradoException.class)
                 .hasMessageContaining("Nota");
     }
@@ -390,11 +435,11 @@ class ClienteServiceTest {
     void naoDeveDeletarNotaDeOutroCliente() {
         UUID clienteId = UUID.randomUUID();
         UUID notaId = UUID.randomUUID();
-        when(clienteRepository.existsById(clienteId)).thenReturn(true);
+        when(clienteRepository.existsByIdAndClinica(clienteId, CLINICA)).thenReturn(true);
         when(clienteNotaRepository.findById(notaId))
                 .thenReturn(Optional.of(nota(notaId, UUID.randomUUID(), "Outro cliente")));
 
-        assertThatThrownBy(() -> clienteService.deletarNota(clienteId, notaId))
+        assertThatThrownBy(() -> clienteService.deletarNota(CLINICA, clienteId, notaId))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -402,11 +447,11 @@ class ClienteServiceTest {
     void deveDeletarNotaDoCliente() {
         UUID clienteId = UUID.randomUUID();
         UUID notaId = UUID.randomUUID();
-        when(clienteRepository.existsById(clienteId)).thenReturn(true);
+        when(clienteRepository.existsByIdAndClinica(clienteId, CLINICA)).thenReturn(true);
         when(clienteNotaRepository.findById(notaId))
                 .thenReturn(Optional.of(nota(notaId, clienteId, "Texto")));
 
-        clienteService.deletarNota(clienteId, notaId);
+        clienteService.deletarNota(CLINICA, clienteId, notaId);
 
         verify(clienteNotaRepository).delete(any(ClienteNota.class));
     }
@@ -414,7 +459,7 @@ class ClienteServiceTest {
     @Test
     void deveConstruirHistoricoComAgregadosFinanceiros() {
         UUID clienteId = UUID.randomUUID();
-        when(clienteRepository.findById(clienteId))
+        when(clienteRepository.findByIdAndClinica(clienteId, CLINICA))
                 .thenReturn(Optional.of(cliente(clienteId, "Maria", null, "111")));
 
         Atendimento agendado = new Atendimento();
@@ -432,13 +477,13 @@ class ClienteServiceTest {
         var idRecente = UUID.randomUUID();
         when(atendimentoRepository.findByCliente_Id(clienteId))
                 .thenReturn(List.of(agendado, concluidoAntigo, concluidoRecente));
-        when(atendimentoService.buscarPorId(idAgendado))
+        when(atendimentoService.buscarPorId(CLINICA, idAgendado))
                 .thenReturn(atendimentoDTO(idAgendado, "Maria", LocalDateTime.of(2026, 6, 10, 15, 0),
                         StatusAtendimento.AGENDADO, new BigDecimal("0.00")));
-        when(atendimentoService.buscarPorId(idAntigo))
+        when(atendimentoService.buscarPorId(CLINICA, idAntigo))
                 .thenReturn(atendimentoDTO(idAntigo, "Maria", LocalDateTime.of(2026, 5, 2, 10, 0),
                         StatusAtendimento.CONCLUIDO, new BigDecimal("120.00")));
-        when(atendimentoService.buscarPorId(idRecente))
+        when(atendimentoService.buscarPorId(CLINICA, idRecente))
                 .thenReturn(atendimentoDTO(idRecente, "Maria", LocalDateTime.of(2026, 6, 1, 9, 0),
                         StatusAtendimento.CONCLUIDO, new BigDecimal("80.00")));
 
@@ -446,7 +491,7 @@ class ClienteServiceTest {
         org.springframework.test.util.ReflectionTestUtils.setField(concluidoAntigo, "id", idAntigo);
         org.springframework.test.util.ReflectionTestUtils.setField(concluidoRecente, "id", idRecente);
 
-        var historico = clienteService.historicoCliente(clienteId);
+        var historico = clienteService.historicoCliente(CLINICA, clienteId);
 
         assertThat(historico.totalAtendimentos()).isEqualTo(3);
         assertThat(historico.atendimentosConcluidos()).isEqualTo(2);
@@ -461,11 +506,11 @@ class ClienteServiceTest {
     @Test
     void deveRetornarHistoricoVazioParaClienteSemAtendimentos() {
         UUID clienteId = UUID.randomUUID();
-        when(clienteRepository.findById(clienteId))
+        when(clienteRepository.findByIdAndClinica(clienteId, CLINICA))
                 .thenReturn(Optional.of(cliente(clienteId, "Maria", null, "111")));
         when(atendimentoRepository.findByCliente_Id(clienteId)).thenReturn(List.of());
 
-        var historico = clienteService.historicoCliente(clienteId);
+        var historico = clienteService.historicoCliente(CLINICA, clienteId);
 
         assertThat(historico.totalAtendimentos()).isZero();
         assertThat(historico.gastoTotal()).isEqualByComparingTo("0.00");
@@ -478,9 +523,9 @@ class ClienteServiceTest {
         UUID id = UUID.randomUUID();
         var cliente = cliente(id, "Maria", null, "111");
         cliente.setDataNascimento(LocalDate.of(1990, 6, 5));
-        when(clienteRepository.findByDataNascimentoMes(6)).thenReturn(List.of(cliente));
+        when(clienteRepository.findByDataNascimentoMesAndClinica(6, CLINICA)).thenReturn(List.of(cliente));
 
-        var lista = clienteService.aniversariantes(6);
+        var lista = clienteService.aniversariantes(CLINICA, 6);
 
         assertThat(lista).hasSize(1);
         assertThat(lista.get(0).dataNascimento()).isEqualTo(LocalDate.of(1990, 6, 5));
@@ -489,17 +534,17 @@ class ClienteServiceTest {
     @Test
     void deveUsarMesAtualQuandoNaoInformado() {
         int mesAtual = LocalDate.now().getMonthValue();
-        when(clienteRepository.findByDataNascimentoMes(mesAtual)).thenReturn(List.of());
+        when(clienteRepository.findByDataNascimentoMesAndClinica(mesAtual, CLINICA)).thenReturn(List.of());
 
-        var lista = clienteService.aniversariantes(null);
+        var lista = clienteService.aniversariantes(CLINICA, null);
 
         assertThat(lista).isEmpty();
-        verify(clienteRepository).findByDataNascimentoMes(mesAtual);
+        verify(clienteRepository).findByDataNascimentoMesAndClinica(mesAtual, CLINICA);
     }
 
     @Test
     void naoDeveAceitarMesInvalido() {
-        assertThatThrownBy(() -> clienteService.aniversariantes(13))
+        assertThatThrownBy(() -> clienteService.aniversariantes(CLINICA, 13))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }
