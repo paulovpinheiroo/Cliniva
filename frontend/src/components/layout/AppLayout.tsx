@@ -3,14 +3,6 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 
-const navItems = [
-  { to: '/', label: 'Dashboard', end: true },
-  { to: '/clientes', label: 'Clientes' },
-  { to: '/servicos', label: 'Serviços' },
-  { to: '/estoque', label: 'Estoque' },
-  { to: '/atendimentos', label: 'Atendimentos' },
-]
-
 function PageTransition() {
   const location = useLocation()
   return (
@@ -25,6 +17,15 @@ export function AppLayout() {
   const { usuario, sair } = useAuth()
   const navigate = useNavigate()
   const [menuAberto, setMenuAberto] = useState(false)
+
+  const navItems = [
+    { to: '/', label: 'Dashboard', end: true },
+    { to: '/clientes', label: 'Clientes' },
+    { to: '/servicos', label: 'Serviços' },
+    { to: '/estoque', label: 'Estoque' },
+    { to: '/atendimentos', label: 'Atendimentos' },
+    ...(usuario?.papel === 'ADMIN' ? [{ to: '/admin', label: 'Admin' }] : []),
+  ]
 
   useEffect(() => {
     const fechar = () => setMenuAberto(false)

@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { RequerAdmin } from '@/components/auth/RequerAdmin'
 import { RequerAuth } from '@/components/auth/RequerAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { AdminPage } from '@/pages/AdminPage'
 import { AtendimentosPage } from '@/pages/AtendimentosPage'
 import { CadastroPage } from '@/pages/CadastroPage'
 import { ClienteDetalhePage } from '@/pages/ClienteDetalhePage'
@@ -29,6 +31,7 @@ function App() {
         <Route path="/servicos" element={<ServicosPage />} />
         <Route path="/estoque" element={<EstoquePage />} />
         <Route path="/atendimentos" element={<AtendimentosPage />} />
+        <Route path="/admin" element={<RequerAdmin><AdminPage /></RequerAdmin>} />
         <Route path="/trocar-senha" element={<TrocarSenhaPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
