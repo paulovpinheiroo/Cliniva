@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 
 const navItems = [
@@ -21,6 +22,8 @@ function PageTransition() {
 
 export function AppLayout() {
   const { theme, toggleTheme } = useTheme()
+  const { usuario, sair } = useAuth()
+  const navigate = useNavigate()
   const [menuAberto, setMenuAberto] = useState(false)
 
   useEffect(() => {
@@ -134,6 +137,26 @@ export function AppLayout() {
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-4 lg:gap-6">
+            <span className="hidden max-w-56 truncate font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft xl:inline">
+              {usuario?.nome || usuario?.email}
+            </span>
+            {usuario?.papel === 'ADMIN' && (
+              <span className="border border-accent px-2 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-accent-strong">
+                Admin
+              </span>
+            )}
+            <button
+              onClick={() => navigate('/trocar-senha')}
+              className={`hidden cursor-pointer md:inline ${mono}`}
+            >
+              [ trocar senha ]
+            </button>
+            <button
+              onClick={() => sair()}
+              className={`cursor-pointer ${mono}`}
+            >
+              [ sair ]
+            </button>
             <button
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}

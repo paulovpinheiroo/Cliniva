@@ -1,3 +1,5 @@
+import { sessionStore } from '@/lib/session'
+
 const BASE_URL = '/api'
 
 export class ApiError extends Error {
@@ -13,12 +15,19 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = sessionStore.getToken()
+  const clinicaId = sessionStore.getClinicaId()
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(clinicaId ? { 'X-Clinica': clinicaId } : {}),
+    ...options.headers,
+  }
+
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
   })
 
   if (response.status === 204) {
