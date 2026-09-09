@@ -16,7 +16,7 @@ CREATE TABLE usuario (
     ativo boolean NOT NULL,
     nome varchar(255),
     email varchar(255) NOT NULL,
-    criada_em timestamp(6) NOT NULL,
+    criado_em timestamp(6) NOT NULL,
     clinica_id uuid,
     CONSTRAINT pk_usuario PRIMARY KEY (id),
     CONSTRAINT uk_usuario_email UNIQUE (email),
