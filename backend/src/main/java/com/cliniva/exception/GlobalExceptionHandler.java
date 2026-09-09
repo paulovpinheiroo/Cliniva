@@ -25,6 +25,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(HttpStatus.FORBIDDEN.value(), ex.getMessage());
     }
 
+    @ExceptionHandler(SupabaseIndisponivelException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ErrorResponse handleSupabaseIndisponivel(SupabaseIndisponivelException ex) {
+        return new ErrorResponse(HttpStatus.SERVICE_UNAVAILABLE.value(), ex.getMessage());
+    }
+
     @ExceptionHandler({ RecursoDuplicadoException.class, EstoqueInsuficienteException.class,
             TransicaoStatusInvalidaException.class, RecursoEmUsoException.class })
     @ResponseStatus(HttpStatus.CONFLICT)
