@@ -11,9 +11,10 @@ serviços, estoque e atendimentos, construída em **React + TypeScript + Vite
 | Camada | Tecnologia |
 |--------|------------|
 | UI | React 19 + React Router 7 |
-| Linguagem | TypeScript (~5/6) |
+| Linguagem | TypeScript (>=5) |
 | Build | Vite 8 |
 | Estilo | Tailwind CSS v4 (`@tailwindcss/vite`) |
+| Auth | Supabase (`@supabase/supabase-js`) |
 | Lint | Oxlint |
 | Testes | — (planejado) |
 
@@ -29,23 +30,42 @@ npm run preview      # serve dist/
 
 Durante o desenvolvimento o backend precisa estar rodando em
 `localhost:8080` (ver [`../backend/README.md`](../backend/README.md)).
-O Vite encaminha `/api/*` para lá via proxy (`vite.config.ts`), então não há
-CORS nem configuração de ambiente no frontend.
+O Vite encaminha `/api/*` para lá via proxy (`vite.config.ts`).
+
+### Variáveis de ambiente (autenticação)
+
+Crie `frontend/.env` a partir de [`frontend/.env.example`](.env.example):
+
+```bash
+VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon key do projeto>
+```
+
+Sem essas variáveis a aplicação continua em pé, mas as telas de
+login/cadastro exibem um aviso de "Supabase não configurado". O
+token de acesso é anexado automaticamente como `Authorization: Bearer`
+nos requests; administradores em modo suporte enviam o header
+`X-Clinica` com a clínica selecionada no painel `/admin`.
 
 ## Estrutura do `src/`
 
 ```
 src/
-├── main.tsx                   Bootstrap (ReactDOM + BrowserRouter)
-├── App.tsx                    Rotas (tudo dentro de <AppLayout/>)
+├── main.tsx                   Bootstrap (ReactDOM + BrowserRouter + AuthProvider)
+├── App.tsx                    Rotas (públicas /login /cadastro + protegidas em <AppLayout/>)
 ├── index.css                  Tokens de tema, tipografia, animações
 ├── pages/                     Uma pasta/tela por rota
+│   ├── LoginPage.tsx          Login (e-mail + senha)
+│   ├── CadastroPage.tsx       Auto-cadastro de clínica + responsável
+│   ├── TrocarSenhaPage.tsx    Troca de senha (sessão autenticada)
+│   ├── AdminPage.tsx          Painel admin: clínicas, responsáveis, métricas
 │   ├── DashboardPage.tsx      Contagens, próximos atendimentos, estoque baixo
 │   ├── ClientesPage.tsx       Lista + CRUD de clientes
 │   ├── ServicosPage.tsx       Catálogo + CRUD de serviços
 │   ├── EstoquePage.tsx        Itens + movimentação de estoque
 │   └── AtendimentosPage.tsx   Agenda + serviços extras + status
 ├── components/
+│   ├── auth/                  RequerAuth, RequerAdmin, AuthShell
 │   ├── layout/AppLayout.tsx   Rail carbon fixa + conteúdo (ivory)
 │   └── ui/                    Primitivos editoriais
 │       ├── Button.tsx, TextField.tsx, Select.tsx
@@ -53,12 +73,16 @@ src/
 │       ├── PageHeader.tsx, StatusBadge.tsx
 │       ├── Spinner.tsx, EmptyState.tsx, ErrorBanner.tsx
 ├── api/                       Camada HTTP
-│   ├── http.ts                Wrapper fetch + ApiError
+│   ├── http.ts                Wrapper fetch + ApiError + Bearer/X-Clinica
 │   └── *Api.ts                Um módulo por domínio (tipado)
 ├── hooks/
 │   ├── useApi.ts              Estado data/loading/error + refetch
+│   ├── useAuth.tsx            AuthProvider + useAuth (sessão do Supabase)
 │   └── useTheme.ts            Tema claro/escuro (persiste em localStorage)
-├── types/index.ts             Tipos dos DTOs da API
+├── lib/
+│   ├── supabase.ts            Cliente Supabase centralizado
+│   └── session.ts             Token + clínica (localStorage)
+├── types/                     Tipos dos DTOs da API (index.ts, admin.ts)
 └── utils/format.ts            Formatação (BRL, datas, datas relativas)
 ```
 
@@ -117,8 +141,15 @@ Movimento **sóbrio**, sem dependências:
 - **Adaptação**: `PageHeader`, modais, cabeçalho e rodapé ajustam padding,
   título e data (curta no mobile) por breakpoint.
 
-## Páginas (v0.2.0)
+## Páginas
 
+- **`/login`** — acesso com e-mail e senha (Supabase Auth).
+- **`/cadastro`** — auto-cadastro de clínica: cria a conta no Supabase,
+  registra a clínica + responsável OWNER e entra no painel.
+- **`/trocar-senha`** — atualiza a senha da conta autenticada.
+- **`/admin`** *(somente ADMIN)* — clínicas, responsáveis, reset de senha,
+  ativar/desativar e métricas; **modo suporte** para acessar como outra clínica
+  (grava `X-Clinica` e navega para o painel).
 - **`/` Dashboard** — contagens, próximos atendimentos, estoque baixo,
   novos vs recorrentes no mês e aniversariantes (com saudação via WhatsApp).
 - **`/clientes`** — lista com busca, filtro por status e selo de fidelidade

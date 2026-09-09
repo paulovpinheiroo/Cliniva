@@ -11,10 +11,11 @@ em backend (Java/Spring Boot) e frontend (React).
 
 ## Stack
 
-- **Backend:** Java 21, Spring Boot 4.1, PostgreSQL, Maven
+- **Backend:** Java 21, Spring Boot 4.1, PostgreSQL (Flyway), Maven
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS
+- **Auth:** Supabase (Auth — JWT validado via JWKS na API)
 - **Testes backend:** JUnit 5 + Mockito (H2 em memória)
-- **Deploy:** Cloud gratuita (a definir — Render/Railway/Fly.io)
+- **Deploy:** Fly.io (backend) · Vercel (frontend) · Supabase (banco + auth)
 
 ## Estrutura do repositório
 
@@ -64,9 +65,11 @@ cd backend
 mvn spring-boot:run
 ```
 
-O Hibernate cria/atualiza as tabelas automaticamente (`ddl-auto=update`).
+O schema é gerenciado 100% pelo Flyway (`ddl-auto=validate`) — a migração
+V3 cria a **Clínica Padrão** e o usuário **ADMIN master**
+(`paulovictorpinheiro998663264@gmail.com`), usado no painel `/admin`.
 
-Executar os testes (79 unit/integration tests, usa H2 em memória — não precisa de banco):
+Executar os testes (109 unit/integration tests, usa H2 em memória — não precisa de banco):
 
 ```bash
 cd backend
@@ -80,15 +83,27 @@ Detalhes completos (endpoints, regras de domínio, erros):
 
 ```bash
 cd frontend
+cp .env.example .env   # preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
 npm install
 npm run dev
 ```
 
 O Vite encaminha `/api/*` para o backend (`localhost:8080`) durante o
-desenvolvimento, então não é necessário configurar CORS localmente.
+desenvolvimento. Com auth ativo, todas as rotas exigem login — crie uma
+clínica em `/cadastro` (auto-registro) ou use a conta admin master.
 
 Detalhes completos (estrutura, tema, animações, como criar páginas):
 [`frontend/README.md`](frontend/README.md).
+
+### 5. Variáveis de ambiente do backend
+
+| Variável | Uso |
+|----------|-----|
+| `SPRING_DATASOURCE_URL` / `_USER` / `_PASSWORD` | Conexão com o PostgreSQL |
+| `SUPABASE_URL` | URL base do projeto Supabase (JWKS + admin API) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (criar usuários/reset de senha) |
+| `SUPABASE_JWT_SECRET` | Segredo do JWT (fallback HS256) |
+| `CLINIVA_CORS_ORIGIN` | Origem permitida no CORS (default `http://localhost:5173`) |
 
 ## API — visão geral
 
@@ -102,12 +117,71 @@ Detalhes completos (estrutura, tema, animações, como criar páginas):
 
 Filtros de atendimento: `?status=`, `?clienteId=`, `?dataInicio=`, `?dataFim=`.
 
-Erros seguem o formato `{"status", "mensagem", "erros"}` (400/404/409).
+Erros seguem o formato `{"status", "mensagem", "erros"}` (400/401/403/404/409/503).
+
+## Deploy (v0.3.0)
+
+### Supabase (banco + auth)
+
+1. Crie um projeto no [Supabase](https://supabase.com).
+2. Em **Project Settings → API** copie: URL do projeto, `anon key`,
+   `service_role key` e **Project Settings → Database → Connection URI**.
+3. Driver JDBC: `jdbc:postgresql://db.<ref>.supabase.co:5432/postgres?sslmode=require`
+   (usuário `postgres` e a senha do banco). O Flyway roda
+   automaticamente na primeira subida.
+
+### Backend (Fly.io)
+
+```bash
+cd backend
+fly launch   # usa fly.toml + Dockerfile (créditos grátis ou conta Fly)
+fly secrets set SUPABASE_URL=https://SEU-PROJETO.supabase.co \
+  SUPABASE_SERVICE_ROLE_KEY=<service_role_key> \
+  SUPABASE_JWT_SECRET=<jwt_secret> \
+  SPRING_DATASOURCE_URL='jdbc:postgresql://...' \
+  SPRING_DATASOURCE_USER=postgres \
+  SPRING_DATASOURCE_PASSWORD=<senha> \
+  CLINIVA_CORS_ORIGIN=https://SEU-DOMINIO.vercel.app
+fly deploy
+```
+
+Health check: `GET https://<app>.fly.dev/actuator/health`.
+
+### Frontend (Vercel)
+
+1. Importe o repositório na Vercel (framework detectado: Vite), `dist` de saída.
+2. Configure as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+3. Adicione o domínio da Vercel em `CLINIVA_CORS_ORIGIN` do backend.
+
+O arquivo `vercel.json` faz o rewrite SPA para `index.html`.
+
+### CI
+
+GitHub Actions: `Maven test` (backend), `oxlint` + `vite build` (frontend);
+deploy automático do backend na `main` via `superfly/flyctl-actions`
+(exige o segredo `FLY_API_TOKEN`).
 
 ## Status
 
-🚀 **v0.2.0** — CRM de clientes: perfil completo, status, histórico
-financeiro, anotações, aniversariantes, fidelização e WhatsApp.
+🚀 **v0.3.0** — Auth, multi-tenant e administração: autenticação via
+Supabase (JWKS), isolamento de dados por clínica, painel admin com modo
+suporte e deploy em nuvem.
+
+### v0.3.0 · Auth, Admin & Deploy
+
+- **Autenticação JWT** validada no backend via JWKS do Supabase
+  (`/api/public` aberto, `/api/**` autenticado, `/api/admin/**` somente ADMIN).
+- **Multi-tenant por clínica**: todos os recursos escopados pelo dono; o
+  ADMIN acessa qualquer clínica em **modo suporte** (header `X-Clinica`).
+- **Onboarding e admin**: `/api/public/onboarding` (auto-registro),
+  `/api/admin/*` (listar/criar/detalhar/atualizar clínicas, responsáveis,
+  reset de senha e métricas — clientes, atendimentos, receita).
+- **Frontend**: `/login`, `/cadastro`, `/trocar-senha`, `/admin` com
+  guardas de rota; token anexado automaticamente (`Bearer`) e modo suporte
+  no painel admin.
+- **Deploy**: backend no Fly.io (Dockerfile + `fly.toml`), frontend na
+  Vercel, banco/auth no Supabase, CI no GitHub Actions.
+- 109 testes backend verdes.
 
 ### v0.2.0 · CRM
 
@@ -139,11 +213,11 @@ financeiro, anotações, aniversariantes, fidelização e WhatsApp.
 
 ## Roadmap
 
-### v0.3.0 · Deploy & Auth (planejado)
+### v0.3.0 · Deploy & Auth ✅
 
-- [ ] Autenticação/login de usuário (master)
-- [ ] Escolha de hospedagem gratuita e deploy do backend + banco
-- [ ] Deploy do frontend (Vercel/Netlify) e PWA / home screen
+- [x] Autenticação/login via Supabase (JWT validado via JWKS)
+- [x] Multi-tenant por clínica + painel admin com modo suporte
+- [x] Deploy backend (Fly.io) + frontend (Vercel) + banco (Supabase)
 
 ### MVP Backend ✅
 
@@ -158,7 +232,7 @@ financeiro, anotações, aniversariantes, fidelização e WhatsApp.
 - [x] Validações (Bean Validation)
 - [x] Tratamento global de exceptions
 - [x] CRUD completo (update/delete) e mudança de status do Atendimento
-- [x] Testes unitários (79 testes, suite verde)
+- [x] Testes unitários (109 testes, suite verde)
 
 ### MVP Frontend ✅
 
@@ -172,9 +246,9 @@ financeiro, anotações, aniversariantes, fidelização e WhatsApp.
 
 ### Deploy
 
-- [ ] Auth/login (usuário master)
-- [ ] Escolha de hospedagem gratuita
-- [ ] Deploy backend + banco na nuvem
+- [x] Auth/login (Supabase)
+- [x] Hospedagem: backend Fly.io + frontend Vercel + banco Supabase
+- [x] Deploy backend + banco na nuvem
 - [ ] PWA / instalação em home screen
 
 ## Ideias futuras (fora do escopo do MVP)
