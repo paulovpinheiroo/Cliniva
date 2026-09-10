@@ -1,31 +1,33 @@
-app = "cliniva-backend"
-primary_region = "gru"
-vm.size = "shared-cpu-1x"
-vm.memory = "512mb"
+# fly.toml app configuration file generated for cliniva-backend on 2026-09-09T19:44:53-03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-kill_signal = "SIGINT"
-kill_timeout = 5
+app = 'cliniva-backend'
+primary_region = 'gru'
+kill_signal = 'SIGINT'
+kill_timeout = '5s'
 
 [build]
-  dockerfile = "Dockerfile"
-
-# Segredos (defina com: fly secrets set SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... SUPABASE_JWT_SECRET=...)
-# Banco: fly secrets set SPRING_DATASOURCE_URL=jdbc:postgresql://... SPRING_DATASOURCE_USER=... SPRING_DATASOURCE_PASSWORD=...
-# CORS: fly secrets set CLINIVA_CORS_ORIGIN=<url do frontend na Vercel>
+  dockerfile = 'Dockerfile'
 
 [env]
-  JAVA_MEMORY_OPTS = ""
+  JAVA_MEMORY_OPTS = ''
 
-[[http_service]]
+[http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = true
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 1
 
   [[http_service.checks]]
-    grace_period = "15s"
-    interval = "30s"
-    timeout = "5s"
-    method = "GET"
-    path = "/actuator/health"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/actuator/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'
