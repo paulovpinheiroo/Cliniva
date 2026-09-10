@@ -25,3 +25,10 @@ replay_pid*
 
 # Obsidian vault (documentação local — não versionar)
 cliniva-vault/
+
+# Arquivos de ambiente (credenciais reais — nunca versionar)
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.local.example
+**/.env.local
