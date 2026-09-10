@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPublicKey;
+import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
@@ -29,12 +29,14 @@ class SupabaseJwtVerificadorTest {
     private static final String SUPABASE_URL = "https://projeto.supabase.co";
     private static final String SUBJECT = UUID.randomUUID().toString();
     private static final String KID = "chave-1";
+    private static final String KID_EC = "chave-ec-1";
 
     @Mock
     private JwksProvider jwksProvider;
 
     private SupabaseJwtVerificador verificador;
     private KeyPair chave;
+    private KeyPair chaveEc;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -42,6 +44,9 @@ class SupabaseJwtVerificadorTest {
         KeyPairGenerator gerador = KeyPairGenerator.getInstance("RSA");
         gerador.initialize(2048);
         chave = gerador.generateKeyPair();
+        KeyPairGenerator geradorEc = KeyPairGenerator.getInstance("EC");
+        geradorEc.initialize(new ECGenParameterSpec("secp256r1"));
+        chaveEc = geradorEc.generateKeyPair();
     }
 
     private String tokenValido() {
@@ -59,7 +64,7 @@ class SupabaseJwtVerificadorTest {
     @Test
     void deveAceitarTokenValidoComAssinaturaDoJwks() {
         when(jwksProvider.obterChaves())
-                .thenReturn(Map.of(KID, (RSAPublicKey) chave.getPublic()));
+                .thenReturn(Map.of(KID, chave.getPublic()));
 
         var claims = verificador.verificar(tokenValido());
 
@@ -67,9 +72,29 @@ class SupabaseJwtVerificadorTest {
     }
 
     @Test
+    void deveAceitarTokenEs256AssinadoPorChaveEc() {
+        when(jwksProvider.obterChaves())
+                .thenReturn(Map.of(KID_EC, chaveEc.getPublic()));
+
+        String tokenEs256 = Jwts.builder()
+                .header().keyId(KID_EC).and()
+                .subject(SUBJECT)
+                .claim("aud", "authenticated")
+                .issuer(SUPABASE_URL + "/auth/v1")
+                .issuedAt(Date.from(Instant.now()))
+                .expiration(Date.from(Instant.now().plusSeconds(3600)))
+                .signWith(chaveEc.getPrivate(), Jwts.SIG.ES256)
+                .compact();
+
+        var claims = verificador.verificar(tokenEs256);
+
+        assertThat(claims.getSubject()).isEqualTo(SUBJECT);
+    }
+
+    @Test
     void deveRejeitarTokenComAssinaturaModificada() {
         when(jwksProvider.obterChaves())
-                .thenReturn(Map.of(KID, (RSAPublicKey) chave.getPublic()));
+                .thenReturn(Map.of(KID, chave.getPublic()));
 
         String token = tokenValido() + "tamper";
 
@@ -80,7 +105,7 @@ class SupabaseJwtVerificadorTest {
     @Test
     void deveRejeitarTokenExpirado() {
         when(jwksProvider.obterChaves())
-                .thenReturn(Map.of(KID, (RSAPublicKey) chave.getPublic()));
+                .thenReturn(Map.of(KID, chave.getPublic()));
 
         String tokenExpirado = Jwts.builder()
                 .header().keyId(KID).and()
@@ -99,7 +124,7 @@ class SupabaseJwtVerificadorTest {
     @Test
     void deveRejeitarTokenDeServico() {
         when(jwksProvider.obterChaves())
-                .thenReturn(Map.of(KID, (RSAPublicKey) chave.getPublic()));
+                .thenReturn(Map.of(KID, chave.getPublic()));
 
         String tokenServico = Jwts.builder()
                 .header().keyId(KID).and()
@@ -119,7 +144,7 @@ class SupabaseJwtVerificadorTest {
     void deveRecarregarJwksQuandoKidNaoConhecido() {
         when(jwksProvider.obterChaves())
                 .thenReturn(Map.of())
-                .thenReturn(Map.of(KID, (RSAPublicKey) chave.getPublic()));
+                .thenReturn(Map.of(KID, chave.getPublic()));
 
         assertThatThrownBy(() -> verificador.verificar(tokenValido()))
                 .isInstanceOf(JwtInvalidoException.class)
@@ -131,7 +156,7 @@ class SupabaseJwtVerificadorTest {
     @Test
     void naoDeveAceitarTokenDeEmitenteDiferente() {
         when(jwksProvider.obterChaves())
-                .thenReturn(Map.of(KID, (RSAPublicKey) chave.getPublic()));
+                .thenReturn(Map.of(KID, chave.getPublic()));
 
         String tokenOutroIssuer = Jwts.builder()
                 .header().keyId(KID).and()
@@ -150,7 +175,7 @@ class SupabaseJwtVerificadorTest {
 
     @Test
     void deveRejeitarChaveDesconhecidaMesmoAposRecarregar() {
-        when(jwksProvider.obterChaves()).thenReturn(Map.of("outra-chave", (RSAPublicKey) chave.getPublic()));
+        when(jwksProvider.obterChaves()).thenReturn(Map.of("outra-chave", chave.getPublic()));
 
         assertThatThrownBy(() -> verificador.verificar(tokenValido()))
                 .isInstanceOf(JwtInvalidoException.class)
