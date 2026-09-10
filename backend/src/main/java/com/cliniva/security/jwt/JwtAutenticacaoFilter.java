@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.cliniva.auth.UsuarioPrincipal;
+import com.cliniva.tenancy.Papel;
 import com.cliniva.tenancy.Usuario;
 import com.cliniva.tenancy.UsuarioRepository;
 
@@ -50,7 +51,13 @@ public class JwtAutenticacaoFilter extends OncePerRequestFilter {
     }
 
     private boolean autenticavel(Usuario usuario) {
-        return usuario.isAtivo() && usuario.getClinica() != null && usuario.getClinica().isAtiva();
+        if (!usuario.isAtivo()) {
+            return false;
+        }
+        if (usuario.getPapel() == Papel.ADMIN) {
+            return true;
+        }
+        return usuario.getClinica() != null && usuario.getClinica().isAtiva();
     }
 
     private void autenticar(Usuario usuario, String token) {
