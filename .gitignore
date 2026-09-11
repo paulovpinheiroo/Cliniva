@@ -32,3 +32,6 @@ cliniva-vault/
 !**/.env.example
 !**/.env.local.example
 **/.env.local
+
+# Supabase CLI (temporários)
+supabase/.temp/

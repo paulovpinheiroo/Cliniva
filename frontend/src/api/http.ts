@@ -42,7 +42,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     throw new ApiError(
       body?.status ?? response.status,
-      body?.mensagem ?? `Erro inesperado (${response.status})`,
+      body?.mensagem ?? body?.error ?? `Erro inesperado (${response.status})`,
       body?.erros ?? [],
     )
   }
