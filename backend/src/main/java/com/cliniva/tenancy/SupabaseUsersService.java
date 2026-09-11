@@ -1,6 +1,5 @@
 package com.cliniva.tenancy;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -69,15 +68,15 @@ public class SupabaseUsersService {
 
     public Optional<UsuarioSupabase> buscarPorEmail(String email) {
         exigirConfiguracao();
-        UsuarioSupabase[] usuarios = restClient.get()
+        RespostaListaUsuarios resposta = restClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/auth/v1/admin/users")
                         .queryParam("email", email).build())
                 .retrieve()
-                .body(UsuarioSupabase[].class);
-        if (usuarios == null) {
+                .body(RespostaListaUsuarios.class);
+        if (resposta == null || resposta.users() == null) {
             return Optional.empty();
         }
-        return Arrays.stream(usuarios)
+        return resposta.users().stream()
                 .filter(u -> u.email() != null && u.email().equalsIgnoreCase(email))
                 .findFirst();
     }
@@ -94,5 +93,8 @@ public class SupabaseUsersService {
     }
 
     public record UsuarioSupabase(String id, String email) {
+    }
+
+    public record RespostaListaUsuarios(List<UsuarioSupabase> users) {
     }
 }
