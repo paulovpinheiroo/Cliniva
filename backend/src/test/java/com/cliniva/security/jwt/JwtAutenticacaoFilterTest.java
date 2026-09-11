@@ -133,4 +133,33 @@ class JwtAutenticacaoFilterTest {
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
+
+    @Test
+    void deveAutenticarAdminMasterSemClinica() throws Exception {
+        String supabaseUserId = UUID.randomUUID().toString();
+        Usuario usuario = new Usuario();
+        org.springframework.test.util.ReflectionTestUtils.setField(usuario, "id", UUID.randomUUID());
+        usuario.setSupabaseUserId(supabaseUserId);
+        usuario.setPapel(Papel.ADMIN);
+        usuario.setAtivo(true);
+        usuario.setNome("Administrador Cliniva");
+        usuario.setEmail("admin@cliniva.com");
+        Claims claims = claims(supabaseUserId);
+        when(verificador.verificar(anyString())).thenReturn(claims);
+        when(usuarioRepository.findBySupabaseUserId(supabaseUserId))
+                .thenReturn(Optional.of(usuario));
+
+        SecurityContextHolder.clearContext();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-valido");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filtro.doFilter(request, response, new MockFilterChain());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(authentication).isNotNull();
+        UsuarioPrincipal principal = (UsuarioPrincipal) authentication.getPrincipal();
+        assertThat(principal.papel()).isEqualTo(Papel.ADMIN);
+        assertThat(principal.clinica()).isNull();
+    }
 }

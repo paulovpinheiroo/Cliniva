@@ -51,7 +51,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(
             @Value("${cliniva.cors-origin:http://localhost:5173}") String origem) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(origem));
+        config.setAllowedOriginPatterns(List.of(origem));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Clinica"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -3,6 +3,7 @@ import { RequerAdmin } from '@/components/auth/RequerAdmin'
 import { RequerAuth } from '@/components/auth/RequerAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { AdminPage } from '@/pages/AdminPage'
+import { AdminLoginPage } from '@/pages/AdminLoginPage'
 import { AtendimentosPage } from '@/pages/AtendimentosPage'
 import { CadastroPage } from '@/pages/CadastroPage'
 import { ClienteDetalhePage } from '@/pages/ClienteDetalhePage'
@@ -17,6 +18,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login-admin" element={<AdminLoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
       <Route
         element={

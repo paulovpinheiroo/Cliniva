@@ -1,7 +1,7 @@
 package com.cliniva.security.jwt;
 
 import java.nio.charset.StandardCharsets;
-import java.security.interfaces.RSAPublicKey;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
@@ -17,15 +17,16 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 
 /**
- * Valida tokens de acesso do Supabase Auth (RS256, assinatura verificada via
- * JWKS publicada em {@code /auth/v1/.well-known/jwks.json}).
+ * Valida tokens de acesso do Supabase Auth (assinatura verificada via JWKS
+ * publicada em {@code /auth/v1/.well-known/jwks.json}, suportando as chaves
+ * RSA {@code RS256} e ECDSA {@code ES256} do Supabase).
  */
 @Component
 public class SupabaseJwtVerificador {
 
     private final JwksProvider jwksProvider;
     private final String supabaseUrl;
-    private final Map<String, RSAPublicKey> chaves = new ConcurrentHashMap<>();
+    private final Map<String, PublicKey> chaves = new ConcurrentHashMap<>();
     private volatile Instant chavesCarregadasEm;
 
     public SupabaseJwtVerificador(JwksProvider jwksProvider,
@@ -39,7 +40,7 @@ public class SupabaseJwtVerificador {
             throw new JwtInvalidoException("Token ausente");
         }
         String kid = extrairKid(token);
-        RSAPublicKey chave = chaveDoKid(kid);
+        PublicKey chave = chaveDoKid(kid);
         Claims claims = Jwts.parser().verifyWith(chave).build()
                 .parseSignedClaims(token).getPayload();
 
@@ -54,8 +55,8 @@ public class SupabaseJwtVerificador {
         return claims;
     }
 
-    private RSAPublicKey chaveDoKid(String kid) {
-        RSAPublicKey chave = chaves.get(kid);
+    private PublicKey chaveDoKid(String kid) {
+        PublicKey chave = chaves.get(kid);
         if (chave == null) {
             recarregarChaves();
             chave = chaves.get(kid);
@@ -67,7 +68,7 @@ public class SupabaseJwtVerificador {
     }
 
     private void recarregarChaves() {
-        Map<String, RSAPublicKey> novas = jwksProvider.obterChaves();
+        Map<String, PublicKey> novas = jwksProvider.obterChaves();
         chaves.clear();
         chaves.putAll(novas);
     }
