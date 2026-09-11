@@ -2,7 +2,7 @@ import { sessionStore } from '@/lib/session'
 
 const VITE_API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
 
-const BASE_URL = (VITE_API_URL || (import.meta.env.PROD ? 'https://cliniva-backend.fly.dev' : '/api')).replace(/\/$/, '')
+const BASE_URL = (VITE_API_URL || (import.meta.env.PROD ? 'https://cliniva-backend.fly.dev/api' : '/api')).replace(/\/$/, '')
 
 export class ApiError extends Error {
   status: number
