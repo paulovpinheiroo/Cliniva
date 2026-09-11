@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthShell } from '@/components/auth/AuthShell'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
 export function LoginPage() {
-  const { usuario } = useAuth()
+  const { usuario, carregando, erroCarregamento } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
@@ -18,7 +18,9 @@ export function LoginPage() {
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  if (usuario) return <Navigate to="/" replace />
+  useEffect(() => {
+    if (usuario && !carregando) navigate(from, { replace: true })
+  }, [usuario, carregando, from, navigate])
 
   const entrar = async (evento: FormEvent) => {
     evento.preventDefault()
@@ -32,13 +34,19 @@ export function LoginPage() {
     try {
       const { error } = await client.auth.signInWithPassword({ email, password: senha })
       if (error) throw new Error(error.message)
-      navigate(from, { replace: true })
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Falha ao entrar.')
     } finally {
       setEnviando(false)
     }
   }
+
+  const erroFinal =
+    erro ||
+    (erroCarregamento?.status === 401 || erroCarregamento?.status === 403
+      ? 'Sua conta não está vinculada a uma clínica cadastrada. Crie uma clínica em "Cadastre-se" ou entre em contato com o suporte.'
+      : erroCarregamento?.mensagem) ||
+    ''
 
   return (
     <AuthShell kicker="Acesso" title="Entrar" subtitle="Acesse sua conta para gerenciar a clínica">
@@ -59,7 +67,7 @@ export function LoginPage() {
           onChange={(e) => setSenha(e.target.value)}
           placeholder="••••••••"
         />
-        {erro && <p className="text-sm text-red-600">{erro}</p>}
+        {erroFinal && <p className="text-sm text-red-600">{erroFinal}</p>}
         <Button type="submit" disabled={enviando} className="w-full">
           {enviando ? 'Entrando...' : 'Entrar'}
         </Button>

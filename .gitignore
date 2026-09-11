@@ -37,3 +37,6 @@ cliniva-vault/
 .env
 .env.local
 backend/.env.local
+
+# Supabase CLI (temporários)
+supabase/.temp/

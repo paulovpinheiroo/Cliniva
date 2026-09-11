@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { AuthShell } from '@/components/auth/AuthShell'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 const ADMIN_EMAIL = 'paulovictorpinheiro998663264@gmail.com'
 
 export function AdminLoginPage() {
-  const { usuario } = useAuth()
+  const { usuario, carregando, erroCarregamento } = useAuth()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState(ADMIN_EMAIL)
@@ -18,9 +18,9 @@ export function AdminLoginPage() {
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  if (usuario) {
-    return <Navigate to={usuario.papel === 'ADMIN' ? '/admin' : '/'} replace />
-  }
+  useEffect(() => {
+    if (usuario && !carregando) navigate(usuario.papel === 'ADMIN' ? '/admin' : '/', { replace: true })
+  }, [usuario, carregando, navigate])
 
   const entrar = async (evento: FormEvent) => {
     evento.preventDefault()
@@ -34,13 +34,19 @@ export function AdminLoginPage() {
     try {
       const { error } = await client.auth.signInWithPassword({ email, password: senha })
       if (error) throw new Error(error.message)
-      navigate('/admin', { replace: true })
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Falha ao entrar.')
     } finally {
       setEnviando(false)
     }
   }
+
+  const erroFinal =
+    erro ||
+    (erroCarregamento?.status === 401 || erroCarregamento?.status === 403
+      ? 'Esta conta não tem acesso de administrador à plataforma.'
+      : erroCarregamento?.mensagem) ||
+    ''
 
   return (
     <AuthShell
@@ -65,7 +71,7 @@ export function AdminLoginPage() {
           onChange={(e) => setSenha(e.target.value)}
           placeholder="••••••••"
         />
-        {erro && <p className="text-sm text-red-600">{erro}</p>}
+        {erroFinal && <p className="text-sm text-red-600">{erroFinal}</p>}
         <Button type="submit" disabled={enviando} className="w-full">
           {enviando ? 'Entrando...' : 'Entrar'}
         </Button>
