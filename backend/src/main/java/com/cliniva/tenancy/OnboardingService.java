@@ -29,18 +29,25 @@ public class OnboardingService {
         String nomeClinica = request.nomeClinica().trim();
         String email = request.email().trim().toLowerCase();
 
+        Optional<Usuario> existente = usuarioRepository.findByEmail(email);
+        if (existente.isPresent()) {
+            Usuario jaCadastrado = existente.get();
+            vincularSupabase(jaCadastrado, email);
+            if (jaCadastrado.getClinica() != null) {
+                return new CadastroOnboardingResponseDTO(jaCadastrado.getClinica().getId(),
+                        jaCadastrado.getClinica().getNome(), jaCadastrado.getId());
+            }
+        }
+
         if (clinicaRepository.existsByNome(nomeClinica)) {
             throw new RecursoDuplicadoException("Clínica com esse nome já cadastrada");
-        }
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new RecursoDuplicadoException("E-mail já cadastrado");
         }
 
         Clinica clinica = new Clinica();
         clinica.setNome(nomeClinica);
         clinicaRepository.save(clinica);
 
-        Usuario responsavel = new Usuario();
+        Usuario responsavel = existente.orElseGet(Usuario::new);
         responsavel.setNome(request.nomeResponsavel().trim());
         responsavel.setEmail(email);
         responsavel.setClinica(clinica);

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { http } from '@/api/http'
+import { ApiError, http } from '@/api/http'
 import { AuthShell } from '@/components/auth/AuthShell'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
@@ -15,7 +15,7 @@ interface OnboardingResposta {
 }
 
 export function CadastroPage() {
-  const { usuario } = useAuth()
+  const { usuario, recarregarPerfil } = useAuth()
   const navigate = useNavigate()
 
   const [nomeClinica, setNomeClinica] = useState('')
@@ -28,6 +28,20 @@ export function CadastroPage() {
   const [enviando, setEnviando] = useState(false)
 
   if (usuario) return <Navigate to="/" replace />
+
+  const criarOnboarding = async (): Promise<OnboardingResposta> => {
+    const corpo = { nomeClinica, nomeResponsavel, email }
+    try {
+      return await http.post<OnboardingResposta>('/public/onboarding', corpo)
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : null
+      if (status == null || status >= 500) {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        return http.post<OnboardingResposta>('/public/onboarding', corpo)
+      }
+      throw err
+    }
+  }
 
   const cadastrar = async (evento: FormEvent) => {
     evento.preventDefault()
@@ -47,22 +61,30 @@ export function CadastroPage() {
     setEnviando(true)
     setErro('')
     try {
-      const { data, error } = await client.auth.signUp({ email, password: senha })
-      if (error) throw new Error(error.message)
+      const { error } = await client.auth.signUp({ email, password: senha })
+      if (error) {
+        const msg = error.message ?? ''
+        if (/already registered/i.test(msg)) {
+          const { error: erroLogin } = await client.auth.signInWithPassword({ email, password: senha })
+          if (erroLogin) {
+            throw new Error('Esse e-mail já está cadastrado. Verifique a senha ou faça login.')
+          }
+        } else {
+          throw new Error(msg)
+        }
+      }
 
-      await http.post<OnboardingResposta>('/public/onboarding', {
-        nomeClinica,
-        nomeResponsavel,
-        email,
-      })
+      await criarOnboarding()
+      await recarregarPerfil()
 
-      if (data.session) {
+      const session = await client.auth.getSession()
+      if (session.data.session) {
         navigate('/', { replace: true })
       } else {
         setAguardandoConfirmacao(true)
       }
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Falha ao cadastrar a clínica.')
+      setErro(err instanceof Error ? err.message : 'Falha ao cadastrar a clínica. Tente novamente.')
     } finally {
       setEnviando(false)
     }
