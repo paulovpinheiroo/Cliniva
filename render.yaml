@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: cliniva-backend
+    runtime: docker
+    rootDir: backend
+    branch: main
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=50
+      - key: CLINIVA_CORS_ORIGIN
+        value: https://*.vercel.app
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USER
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

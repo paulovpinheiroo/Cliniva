@@ -15,7 +15,7 @@ em backend (Java/Spring Boot) e frontend (React).
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS
 - **Auth:** Supabase (Auth — JWT validado via JWKS na API)
 - **Testes backend:** JUnit 5 + Mockito (H2 em memória)
-- **Deploy:** Fly.io (backend) · Vercel (frontend) · Supabase (banco + auth)
+- **Deploy:** Render (backend) · Vercel (frontend) · Supabase (banco + auth)
 
 ## Estrutura do repositório
 
@@ -149,22 +149,37 @@ Erros seguem o formato `{"status", "mensagem", "erros"}` (400/401/403/404/409/50
 > (aplica as migrations), depois o deploy da app na `main` — o backend
 > sobe com `ddl-auto=validate` e exige o schema já existente.
 
-### Backend (Fly.io)
+### Backend (Render)
 
-```bash
-cd backend
-fly launch   # usa fly.toml + Dockerfile (créditos grátis ou conta Fly)
-fly secrets set SUPABASE_URL=https://SEU-PROJETO.supabase.co \
-  SUPABASE_SERVICE_ROLE_KEY=<service_role_key> \
-  SUPABASE_JWT_SECRET=<jwt_secret> \
-  SPRING_DATASOURCE_URL='jdbc:postgresql://...' \
-  SPRING_DATASOURCE_USER=postgres \
-  SPRING_DATASOURCE_PASSWORD=<senha> \
-  CLINIVA_CORS_ORIGIN=https://SEU-DOMINIO.vercel.app
-fly deploy
+O deploy é declarado via `render.yaml` (Blueprint, raiz do repo). Push na
+`main` → Render reconstrói o Docker (`backend/Dockerfile`) e publica.
+
+```yaml
+# render.yaml (versão resumida — ver arquivo real)
+services:
+  - type: web
+    name: cliniva-backend        # URL: https://cliniva-hrpj.onrender.com
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /actuator/health
 ```
 
-Health check: `GET https://<app>.fly.dev/actuator/health`.
+Secrets preenchidos no painel do serviço (Environment), **fora do git**:
+`SPRING_DATASOURCE_URL/USER/PASSWORD`, `SUPABASE_URL`,
+`SUPABASE_JWT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`. Fixas via render.yaml:
+`PORT=8080`, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=50`,
+`CLINIVA_CORS_ORIGIN=https://*.vercel.app`.
+
+> **Pooler IPv4 (obrigatório no Render):** a conexão direta do Supabase é
+> IPv6-only e o free do Render não tem IPv6. Use o Shared Pooler (session,
+> porta 5432): `jdbc:postgresql://aws-0-us-west-2.pooler.supabase.com:5432/postgres`
+> com usuário `postgres.<project-ref>`. Ver `cliniva-vault/03 - Deploy/Render`.
+>
+> **Free tier dorme:** o pinger do UptimeRobot (health a cada 10 min)
+> mantém a instância acordada.
+
+Health check: `GET https://cliniva-hrpj.onrender.com/actuator/health`.
 
 ### Frontend (Vercel)
 
@@ -177,8 +192,8 @@ O arquivo `vercel.json` faz o rewrite SPA para `index.html`.
 ### CI
 
 GitHub Actions: `Maven test` (backend), `oxlint` + `vite build` (frontend);
-deploy automático do backend na `main` via `superfly/flyctl-actions`
-(exige o segredo `FLY_API_TOKEN`).
+o deploy do backend é do Render (Blueprint, push na `main`), o do frontend
+da Vercel — nenhum segredo de deploy é necessário no GitHub.
 
 ## Status
 
@@ -198,7 +213,7 @@ suporte e deploy em nuvem.
 - **Frontend**: `/login`, `/cadastro`, `/trocar-senha`, `/admin` com
   guardas de rota; token anexado automaticamente (`Bearer`) e modo suporte
   no painel admin.
-- **Deploy**: backend no Fly.io (Dockerfile + `fly.toml`), frontend na
+- **Deploy**: backend no Render (free + pinger UptimeRobot), frontend na
   Vercel, banco/auth no Supabase, CI no GitHub Actions.
 - 109 testes backend verdes.
 
