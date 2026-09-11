@@ -32,8 +32,8 @@ class OnboardingServiceTest {
 
     @Test
     void deveCadastrarClinicaEResponsavelOwnerr() {
+        when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.empty());
         when(clinicaRepository.existsByNome("Clínica Teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("dona@email.com")).thenReturn(false);
         when(supabaseUsers.configurada()).thenReturn(false);
         when(clinicaRepository.save(any(Clinica.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
@@ -54,8 +54,8 @@ class OnboardingServiceTest {
 
     @Test
     void deveVincularUsuarioSupabaseJaExistente() {
+        when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.empty());
         when(clinicaRepository.existsByNome("Clínica Teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("dona@email.com")).thenReturn(false);
         when(supabaseUsers.configurada()).thenReturn(true);
         when(supabaseUsers.buscarPorEmail("dona@email.com"))
                 .thenReturn(Optional.of(new SupabaseUsersService.UsuarioSupabase("sup-123", "dona@email.com")));
@@ -74,6 +74,7 @@ class OnboardingServiceTest {
 
     @Test
     void naoDeveCadastrarComNomeDeClinicaJaExistente() {
+        when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.empty());
         when(clinicaRepository.existsByNome("Clínica Teste")).thenReturn(true);
 
         assertThatThrownBy(() -> onboardingService.cadastrarClinica(
@@ -82,12 +83,20 @@ class OnboardingServiceTest {
     }
 
     @Test
-    void naoDeveCadastrarComEmailJaExistente() {
-        when(clinicaRepository.existsByNome("Clínica Teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("dona@email.com")).thenReturn(true);
+    void deveRetornarClinicaJaExistenteSeEmailJaCadastrado() {
+        Clinica clinica = new Clinica();
+        clinica.setNome("Clínica Existente");
+        Usuario existente = new Usuario();
+        existente.setId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000009"));
+        existente.setEmail("dona@email.com");
+        existente.setClinica(clinica);
+        when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.of(existente));
+        when(supabaseUsers.configurada()).thenReturn(false);
 
-        assertThatThrownBy(() -> onboardingService.cadastrarClinica(
-                new CadastroOnboardingRequestDTO("Clínica Teste", "Dona Maria", "dona@email.com")))
-                .hasMessageContaining("E-mail");
+        var resposta = onboardingService.cadastrarClinica(
+                new CadastroOnboardingRequestDTO("Clínica Teste", "Dona Maria", "dona@email.com"));
+
+        assertThat(resposta.responsavelId()).isEqualTo(existente.getId());
+        assertThat(resposta.clinicaNome()).isEqualTo("Clínica Existente");
     }
 }

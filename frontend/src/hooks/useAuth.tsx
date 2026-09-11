@@ -23,6 +23,7 @@ interface AuthContextValue {
   carregando: boolean
   erroCarregamento: ErroCarregamento | null
   sair: () => Promise<void>
+  recarregarPerfil: () => Promise<UsuarioLogado | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -60,10 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return logado
     } catch (err) {
       if (sequencia !== sequenciaRef.current) return null
-      console.error('Falha ao carregar o usuário logado:', err)
+      const status = err instanceof ApiError ? err.status : null
+      if (status !== 401) {
+        console.error('Falha ao carregar o usuário logado:', err)
+      }
       setUsuario(null)
       setErroCarregamento({
-        status: err instanceof ApiError ? err.status : null,
+        status,
         mensagem: err instanceof Error ? err.message : 'Falha ao carregar o usuário.',
       })
       return null
@@ -120,9 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setErroCarregamento(null)
   }, [])
 
+  const recarregarPerfil = useCallback(() => carregarUsuario(), [carregarUsuario])
+
   const valor = useMemo(
-    () => ({ usuario, carregando, erroCarregamento, sair }),
-    [usuario, carregando, erroCarregamento, sair],
+    () => ({ usuario, carregando, erroCarregamento, sair, recarregarPerfil }),
+    [usuario, carregando, erroCarregamento, sair, recarregarPerfil],
   )
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>
