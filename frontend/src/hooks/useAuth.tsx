@@ -46,7 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUsuario(logado)
       sessionStore.setClinicaId(logado.clinicaId)
       return logado
-    } catch {
+    } catch (err) {
+      console.error('Falha ao carregar o usuário logado:', err)
       setUsuario(null)
       return null
     }
@@ -64,18 +65,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!ativo) return
       if (data.session) {
         sessionStore.setToken(data.session.access_token)
-        carregarUsuario()
+        carregarUsuario().finally(() => {
+          if (ativo) setCarregando(false)
+        })
+      } else {
+        setCarregando(false)
       }
-      setCarregando(false)
     })
 
     const { data: inscricao } = supabase.auth.onAuthStateChange((evento, sessao) => {
       if (evento === 'SIGNED_IN' || evento === 'TOKEN_REFRESHED') {
         sessionStore.setToken(sessao?.access_token ?? null)
-        carregarUsuario()
+        setCarregando(true)
+        carregarUsuario().finally(() => {
+          if (ativo) setCarregando(false)
+        })
       } else if (evento === 'SIGNED_OUT') {
         aplicarNoLocalStorage(null, null)
         setUsuario(null)
+        if (ativo) setCarregando(false)
       }
     })
 
