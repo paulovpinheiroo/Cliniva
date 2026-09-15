@@ -19,7 +19,7 @@ export function AppLayout() {
   const [menuAberto, setMenuAberto] = useState(false)
 
   const navItems = [
-    { to: '/', label: 'Dashboard', end: true },
+    { to: '/dashboard', label: 'Dashboard', end: true },
     { to: '/clientes', label: 'Clientes' },
     { to: '/servicos', label: 'Serviços' },
     { to: '/estoque', label: 'Estoque' },
@@ -74,7 +74,7 @@ export function AppLayout() {
           'lg:translate-x-0',
         ].join(' ')}
       >
-        <NavLink to="/" end className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
+        <NavLink to="/dashboard" end className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
           <img src="/Cliniva-Simbolo.png" alt="Símbolo Clíniva" className="h-8 w-8 object-contain" />
           <span className="font-display text-2xl text-bone">Clíniva</span>
         </NavLink>
