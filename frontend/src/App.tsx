@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequerAdmin } from '@/components/auth/RequerAdmin'
 import { RequerAuth } from '@/components/auth/RequerAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { HomeRouter } from '@/components/layout/HomeRouter'
 import { AdminPage } from '@/pages/AdminPage'
 import { AdminLoginPage } from '@/pages/AdminLoginPage'
 import { AtendimentosPage } from '@/pages/AtendimentosPage'
@@ -17,6 +18,7 @@ import { TrocarSenhaPage } from '@/pages/TrocarSenhaPage'
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<HomeRouter />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login-admin" element={<AdminLoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
@@ -27,7 +29,7 @@ function App() {
           </RequerAuth>
         }
       >
-        <Route path="/" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/clientes/:id" element={<ClienteDetalhePage />} />
         <Route path="/servicos" element={<ServicosPage />} />
