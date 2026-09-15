@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
+import { LogIn, Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useTheme } from '@/hooks/useTheme'
 
-const monoLink =
-  'cursor-pointer font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft underline-offset-4 transition-colors duration-150 ease-in-out hover:text-ink hover:underline'
+const iconBtn =
+  'cursor-pointer text-ink-soft transition-colors duration-150 ease-in-out hover:text-ink'
 
 export function LandingHeader() {
   const { theme, toggleTheme } = useTheme()
@@ -19,12 +20,12 @@ export function LandingHeader() {
           <button
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
-            className={`cursor-pointer ${monoLink}`}
+            className={`cursor-pointer ${iconBtn}`}
           >
-            [ {theme === 'dark' ? 'claro' : 'escuro'} ]
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
-          <Link to="/login" className={monoLink}>
-            [ entrar ]
+          <Link to="/login" className={`inline-flex ${iconBtn}`} aria-label="Entrar">
+            <LogIn size={16} />
           </Link>
           <Link to="/cadastro" className="shrink-0">
             <Button size="sm">Criar clínica</Button>

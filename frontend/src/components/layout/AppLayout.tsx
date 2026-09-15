@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { KeyRound, LogOut, Menu, Moon, Sun } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -54,8 +55,8 @@ export function AppLayout() {
     month: '2-digit',
   })
 
-  const mono =
-    'font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft underline-offset-4 transition-colors duration-150 ease-in-out hover:text-ink hover:underline'
+  const iconBtn =
+    'cursor-pointer text-ink-soft transition-colors duration-150 ease-in-out hover:text-ink'
 
   return (
     <div className="flex min-h-screen bg-ivory text-ink">
@@ -129,9 +130,9 @@ export function AppLayout() {
             <button
               onClick={() => setMenuAberto(true)}
               aria-label="Abrir menu"
-              className={`cursor-pointer lg:hidden ${mono}`}
+              className={`cursor-pointer lg:hidden ${iconBtn}`}
             >
-              [ menu ]
+              <Menu size={16} />
             </button>
             <span className="hidden truncate font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft lg:inline">
               Clíniva — Sistema de gestão
@@ -148,22 +149,24 @@ export function AppLayout() {
             )}
             <button
               onClick={() => navigate('/trocar-senha')}
-              className={`hidden cursor-pointer md:inline ${mono}`}
+              aria-label="Trocar senha"
+              className={`hidden cursor-pointer md:inline ${iconBtn}`}
             >
-              [ trocar senha ]
+              <KeyRound size={16} />
             </button>
             <button
               onClick={() => sair()}
-              className={`cursor-pointer ${mono}`}
+              aria-label="Sair"
+              className={`cursor-pointer ${iconBtn}`}
             >
-              [ sair ]
+              <LogOut size={16} />
             </button>
             <button
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
-              className={`cursor-pointer ${mono}`}
+              className={`cursor-pointer ${iconBtn}`}
             >
-              [ {theme === 'dark' ? 'claro' : 'escuro'} ]
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft md:inline">
               {dataLonga}
