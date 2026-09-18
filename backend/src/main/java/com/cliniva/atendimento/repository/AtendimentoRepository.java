@@ -1,5 +1,6 @@
 package com.cliniva.atendimento.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,6 +18,12 @@ public interface AtendimentoRepository
     Optional<Atendimento> findByIdAndClinica(UUID id, Clinica clinica);
 
     List<Atendimento> findByCliente_Id(UUID clienteId);
+
+    List<Atendimento> findByClinicaAndDataAtendimentoBetween(Clinica clinica,
+            LocalDateTime inicio, LocalDateTime fim);
+
+    List<Atendimento> findByClinicaAndDataAtendimentoBefore(Clinica clinica,
+            LocalDateTime data);
 
     boolean existsByCliente_Id(UUID clienteId);
 

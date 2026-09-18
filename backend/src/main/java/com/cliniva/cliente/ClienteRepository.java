@@ -37,6 +37,11 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
     @Query("SELECT c FROM Cliente c WHERE c.clinica = :clinica AND EXTRACT(MONTH FROM c.dataNascimento) = :mes")
     List<Cliente> findByDataNascimentoMesAndClinica(@Param("mes") int mes, @Param("clinica") Clinica clinica);
 
+    @Query("SELECT c FROM Cliente c WHERE c.clinica = :clinica "
+            + "AND EXTRACT(MONTH FROM c.dataNascimento) = :mes AND EXTRACT(DAY FROM c.dataNascimento) = :dia")
+    List<Cliente> findAniversariantesHojeByClinica(@Param("dia") int dia, @Param("mes") int mes,
+            @Param("clinica") Clinica clinica);
+
     @Query("SELECT c.clinica.id, COUNT(c) FROM Cliente c GROUP BY c.clinica.id")
     List<Object[]> contarPorClinica();
 
