@@ -19,6 +19,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(HttpStatus.NOT_FOUND.value(), ex.getMessage());
     }
 
+    @ExceptionHandler(LimiteDeGeracoesExcedidoException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public ErrorResponse handleLimiteDeGeracoes(LimiteDeGeracoesExcedidoException ex) {
+        return new ErrorResponse(HttpStatus.TOO_MANY_REQUESTS.value(), ex.getMessage());
+    }
+
     @ExceptionHandler(AcessoNaoPermitidoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ErrorResponse handleAcessoNaoPermitido(AcessoNaoPermitidoException ex) {
