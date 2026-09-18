@@ -1,5 +1,6 @@
 package com.cliniva.item;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,8 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
     boolean existsByIdAndClinica(UUID id, Clinica clinica);
 
     List<Item> findByClinica(Clinica clinica);
+
+    List<Item> findByClinicaAndQuantidadeEmEstoqueLessThan(Clinica clinica, BigDecimal quantidade);
 
     boolean existsByNomeAndClinica(String nome, Clinica clinica);
 
