@@ -107,6 +107,31 @@ clínica em `/cadastro` (auto-registro) ou use a conta admin master.
 Detalhes completos (estrutura, tema, animações, como criar páginas):
 [`frontend/README.md`](frontend/README.md).
 
+### 4.5. Alternativa: tudo em containers (Docker Compose)
+
+Sobe o Postgres local (as migrations de `supabase/migrations/` são aplicadas
+automaticamente na primeira subida), o backend e o frontend:
+
+```bash
+docker compose up -d --build   # db :5433, api :8080, ui :5173
+docker compose stop            # pausa sem perder os dados
+docker compose down            # remove os containers (os dados ficam no volume)
+```
+
+A porta `5433` do Postgres do compose evita conflito com um Postgres já rodando
+no host (5432).
+
+Requisitos: `backend/.env.local` e `frontend/.env` preenchidos — o login/auth
+continuam usando o Supabase remoto, só o banco de dados é local. Para o código
+ser reavaliado depois de mudanças, use `docker compose up -d --build` de novo.
+
+> Com LLM no resumo do dia: exporte `LLM_PROVIDER` e `LLM_GEMINI_API_KEY`
+> (ou `LLM_GROQ_API_KEY`) no serviço `backend` do `docker-compose.yml`.
+
+Fazendo login com uma conta já vinculada a uma clínica no banco remoto, o
+primeiro acesso cria a clínica local via onboarding (`/cadastro`); a conta
+**ADMIN master** (seed da migration `03`) funciona sempre em `/admin`.
+
 ### 5. Variáveis de ambiente do backend
 
 | Variável | Uso |
