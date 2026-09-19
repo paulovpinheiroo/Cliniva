@@ -20,7 +20,7 @@ public class ResumoProviderConfig {
     @ConditionalOnProperty(prefix = "cliniva.llm", name = "provider", havingValue = "groq")
     public ResumoProvider groqResumoProvider(
             @Value("${cliniva.llm.groq.api-key}") String apiKey,
-            @Value("${cliniva.llm.groq.model:llama-3.3-70b-versatile}") String modelo) {
+            @Value("${cliniva.llm.groq.model:groq/compound-mini}") String modelo) {
         return new GroqResumoProvider(apiKey, modelo);
     }
 }
