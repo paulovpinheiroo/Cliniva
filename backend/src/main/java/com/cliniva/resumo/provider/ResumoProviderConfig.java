@@ -12,7 +12,7 @@ public class ResumoProviderConfig {
     @ConditionalOnProperty(prefix = "cliniva.llm", name = "provider", havingValue = "gemini")
     public ResumoProvider geminiResumoProvider(
             @Value("${cliniva.llm.gemini.api-key}") String apiKey,
-            @Value("${cliniva.llm.gemini.model:gemini-2.0-flash}") String modelo) {
+            @Value("${cliniva.llm.gemini.model:gemini-3.6-flash}") String modelo) {
         return new GeminiResumoProvider(apiKey, modelo);
     }
 
