@@ -37,4 +37,6 @@ public class Servico {
     private String descricao;
     @Column(name = "valor", nullable = false)
     private BigDecimal valor;
+    @Column(name = "duracao_minutos", nullable = false)
+    private Integer duracaoMinutos = 30;
 }

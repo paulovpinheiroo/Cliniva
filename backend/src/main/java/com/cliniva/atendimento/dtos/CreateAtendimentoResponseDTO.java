@@ -13,6 +13,7 @@ public record CreateAtendimentoResponseDTO(
         UUID clienteId,
         LocalDateTime dataAtendimento,
         LocalDate dataCriacao,
+        Integer duracaoMinutos,
         StatusAtendimento status,
         List<ServicoRealizadoDTO> servicos) {
 
