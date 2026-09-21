@@ -13,7 +13,7 @@ import { useApi } from '@/hooks/useApi'
 import type { Servico, ServicoInput } from '@/types'
 import { formatMoeda } from '@/utils/format'
 
-const emptyForm: ServicoInput = { nome: '', descricao: '', valor: 0 }
+const emptyForm: ServicoInput = { nome: '', descricao: '', valor: 0, duracaoMinutos: 30 }
 
 export function ServicosPage() {
   const { data: servicos, loading, error, refetch } = useApi(() => servicosApi.listar())
@@ -36,7 +36,12 @@ export function ServicosPage() {
 
   const abrirEditar = (servico: Servico) => {
     setEditando(servico)
-    setForm({ nome: servico.nome, descricao: servico.descricao ?? '', valor: servico.valor })
+    setForm({
+      nome: servico.nome,
+      descricao: servico.descricao ?? '',
+      valor: servico.valor,
+      duracaoMinutos: servico.duracaoMinutos,
+    })
     setFormErro('')
     setModalAberto(true)
   }
@@ -48,6 +53,10 @@ export function ServicosPage() {
     }
     if (!form.valor || form.valor <= 0) {
       setFormErro('Valor deve ser maior que zero.')
+      return
+    }
+    if (!form.duracaoMinutos || form.duracaoMinutos <= 0) {
+      setFormErro('Duração deve ser maior que zero.')
       return
     }
     setSalvando(true)
@@ -104,7 +113,9 @@ export function ServicosPage() {
               <CardItem key={servico.id}>
                 <CardLabel>{servico.nome}</CardLabel>
                 <CardDetail className="truncate">{servico.descricao || '—'}</CardDetail>
-                <CardDetail>{formatMoeda(servico.valor)}</CardDetail>
+                <CardDetail>
+                  {servico.duracaoMinutos} min · {formatMoeda(servico.valor)}
+                </CardDetail>
                 <CardActions>
                   <Button variant="ghost" size="sm" onClick={() => abrirEditar(servico)}>
                     Editar
@@ -122,6 +133,7 @@ export function ServicosPage() {
                 <tr className="text-left text-[11px] font-medium uppercase tracking-[0.18em] text-ink-soft">
                   <th className="py-3 pr-8 font-medium">Nome</th>
                   <th className="py-3 pr-8 font-medium">Descrição</th>
+                  <th className="py-3 pr-8 font-medium">Duração</th>
                   <th className="py-3 pr-8 font-medium">Valor</th>
                   <th className="py-3 text-right font-medium">Ações</th>
                 </tr>
@@ -135,6 +147,9 @@ export function ServicosPage() {
                   <td className="py-4 pr-8 font-medium text-ink">{servico.nome}</td>
                   <td className="max-w-md truncate py-4 pr-8 text-ink-soft">
                     {servico.descricao || '—'}
+                  </td>
+                  <td className="py-4 pr-8 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                    {servico.duracaoMinutos} min
                   </td>
                   <td className="py-4 pr-8 font-mono text-[13px] text-accent-strong">
                     {formatMoeda(servico.valor)}
@@ -186,6 +201,15 @@ export function ServicosPage() {
             value={form.valor === 0 ? '' : form.valor}
             onChange={(e) => setForm({ ...form, valor: Number(e.target.value) })}
             placeholder="0,00"
+          />
+          <TextField
+            label="Duração (min) *"
+            type="number"
+            min={1}
+            step={1}
+            value={form.duracaoMinutos}
+            onChange={(e) => setForm({ ...form, duracaoMinutos: Number(e.target.value) })}
+            placeholder="30"
           />
           {formErro && <p className="text-sm text-red-600">{formErro}</p>}
           <div className="mt-2 flex justify-end gap-3">
