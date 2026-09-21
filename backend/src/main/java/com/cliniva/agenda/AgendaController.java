@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cliniva.agenda.dtos.AgendaItemDTO;
+import com.cliniva.agenda.dtos.AgendaLinkDTO;
 import com.cliniva.agenda.dtos.DisponibilidadeDiaDTO;
 import com.cliniva.agenda.dtos.HorarioRequestDTO;
 import com.cliniva.agenda.dtos.HorarioResponseDTO;
@@ -37,6 +38,12 @@ public class AgendaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
         Clinica clinica = clinicaContext.obterClinicaAtual();
         return agendaService.listarDia(clinica, data);
+    }
+
+    @GetMapping("/link")
+    public AgendaLinkDTO linkPublico() {
+        Clinica clinica = clinicaContext.obterClinicaAtual();
+        return new AgendaLinkDTO(clinica.getSlug(), "/agendar/" + clinica.getSlug());
     }
 
     @GetMapping("/disponibilidade")
