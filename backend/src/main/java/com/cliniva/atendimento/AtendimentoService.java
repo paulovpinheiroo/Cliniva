@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cliniva.agenda.AgendaService;
 import com.cliniva.atendimento.dtos.AtendimentoResumoResponseDTO;
 import com.cliniva.atendimento.dtos.AtendimentoResponseDTO;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO;
@@ -49,6 +50,7 @@ public class AtendimentoService {
         private final ClienteRepository clienteRepository;
         private final ServicoRepository servicoRepository;
         private final ItemRepository itemRepository;
+        private final AgendaService agendaService;
 
         @Transactional
         public CreateAtendimentoResponseDTO createAtendimento(Clinica clinica,
@@ -56,25 +58,36 @@ public class AtendimentoService {
                 Cliente cliente = clienteRepository.findByIdAndClinica(requestDTO.clienteId(), clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
 
+                List<ServicoSelecionadoDTO> servicosSelecionados = requestDTO.servicos();
+                List<Servico> servicos = new ArrayList<>();
+                for (ServicoSelecionadoDTO servicoSelecionado : servicosSelecionados) {
+                        Servico servicoEncontrado = servicoRepository
+                                        .findByIdAndClinica(servicoSelecionado.servicoId(), clinica)
+                                        .orElseThrow(() -> new RecursoNaoEncontradoException(
+                                                        "Serviço não encontrado"));
+                        if (servicos.stream().anyMatch(
+                                        resolvido -> resolvido.getId().equals(servicoEncontrado.getId()))) {
+                                throw new RecursoDuplicadoException("Serviço já adicionado a este atendimento.");
+                        }
+                        servicos.add(servicoEncontrado);
+                }
+
+                int duracaoTotal = servicos.stream().mapToInt(Servico::getDuracaoMinutos).sum();
+                agendaService.validarDisponibilidade(clinica, requestDTO.dataAtendimento(), duracaoTotal, null);
+
                 Atendimento atendimento = new Atendimento();
                 atendimento.setClinica(clinica);
                 atendimento.setCliente(cliente);
                 atendimento.setDataAtendimento(requestDTO.dataAtendimento());
+                atendimento.setDuracaoMinutos(duracaoTotal);
                 atendimento.setStatus(StatusAtendimento.AGENDADO);
                 atendimentoRepository.save(atendimento);
 
                 List<ServicoRealizadoDTO> servicosRealizados = new ArrayList<>();
 
-                for (ServicoSelecionadoDTO servicoSelecionado : requestDTO.servicos()) {
-                        Servico servicoEncontrado = servicoRepository
-                                        .findByIdAndClinica(servicoSelecionado.servicoId(), clinica)
-                                        .orElseThrow(() -> new RecursoNaoEncontradoException(
-                                                        "Serviço não encontrado"));
-
-                        if (atendimentoServicoRepository.existsByAtendimentoAndServico(atendimento,
-                                        servicoEncontrado)) {
-                                throw new RecursoDuplicadoException("Serviço já adicionado a este atendimento.");
-                        }
+                for (int i = 0; i < servicos.size(); i++) {
+                        Servico servicoEncontrado = servicos.get(i);
+                        ServicoSelecionadoDTO servicoSelecionado = servicosSelecionados.get(i);
 
                         AtendimentoServico atendimentoServico = new AtendimentoServico();
                         atendimentoServico.setAtendimento(atendimento);
@@ -127,6 +140,7 @@ public class AtendimentoService {
                                 cliente.getId(),
                                 atendimento.getDataAtendimento(),
                                 atendimento.getDataCriacao(),
+                                atendimento.getDuracaoMinutos(),
                                 atendimento.getStatus(),
                                 servicosRealizados);
         }
@@ -171,6 +185,9 @@ public class AtendimentoService {
 
                 Cliente cliente = clienteRepository.findByIdAndClinica(requestDTO.clienteId(), clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
+
+                agendaService.validarDisponibilidade(clinica, requestDTO.dataAtendimento(),
+                                atendimento.getDuracaoMinutos(), id);
 
                 atendimento.setCliente(cliente);
                 atendimento.setDataAtendimento(requestDTO.dataAtendimento());

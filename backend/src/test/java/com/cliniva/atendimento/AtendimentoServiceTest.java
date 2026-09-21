@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.cliniva.agenda.AgendaService;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO.ServicoSelecionadoDTO;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO.ServicoSelecionadoDTO.ItemUsadoDTO;
@@ -67,6 +68,8 @@ class AtendimentoServiceTest {
         private ServicoRepository servicoRepository;
         @Mock
         private ItemRepository itemRepository;
+        @Mock
+        private AgendaService agendaService;
 
         @InjectMocks
         private AtendimentoService atendimentoService;
@@ -148,7 +151,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty());
@@ -175,7 +177,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty())
@@ -223,7 +224,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.empty());
 
                 assertThatThrownBy(() -> atendimentoService.createAtendimento(CLINICA,
@@ -237,8 +237,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any()))
-                                .thenReturn(false, true);
 
                 CreateAtendimentoRequestDTO requisicao = new CreateAtendimentoRequestDTO(
                                 CLIENTE_ID,
@@ -258,7 +256,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty());

@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cliniva.agenda.AgendaService;
 import com.cliniva.tenancy.dtos.TenancyDtos.CadastroOnboardingRequestDTO;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,6 +27,8 @@ class OnboardingServiceTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private SupabaseUsersService supabaseUsers;
+    @Mock
+    private AgendaService agendaService;
 
     @InjectMocks
     private OnboardingService onboardingService;
@@ -49,7 +52,9 @@ class OnboardingServiceTest {
         verify(usuarioRepository).save(captor.capture());
         assertThat(captor.getValue().getPapel()).isEqualTo(Papel.OWNER);
         assertThat(captor.getValue().getClinica().getNome()).isEqualTo("Clínica Teste");
+        assertThat(captor.getValue().getClinica().getSlug()).isEqualTo("clinica-teste");
         assertThat(captor.getValue().getEmail()).isEqualTo("dona@email.com");
+        verify(agendaService).semearPadrao(any());
     }
 
     @Test

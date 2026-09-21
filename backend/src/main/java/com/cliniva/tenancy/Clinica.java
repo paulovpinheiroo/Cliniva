@@ -25,6 +25,8 @@ public class Clinica {
     private UUID id;
     @Column(name = "nome", nullable = false)
     private String nome;
+    @Column(name = "slug")
+    private String slug;
     @Column(name = "ativa", nullable = false)
     private boolean ativa = true;
     @Column(name = "criada_em", nullable = false, updatable = false)
