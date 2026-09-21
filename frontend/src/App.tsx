@@ -7,6 +7,7 @@ import { AdminPage } from '@/pages/AdminPage'
 import { AdminLoginPage } from '@/pages/AdminLoginPage'
 import { AgendaPage } from '@/pages/AgendaPage'
 import { AtendimentosPage } from '@/pages/AtendimentosPage'
+import { BookingPage } from '@/pages/BookingPage'
 import { CadastroPage } from '@/pages/CadastroPage'
 import { ClienteDetalhePage } from '@/pages/ClienteDetalhePage'
 import { ClientesPage } from '@/pages/ClientesPage'
@@ -23,6 +24,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login-admin" element={<AdminLoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
+      <Route path="/agendar/:slug" element={<BookingPage />} />
       <Route
         element={
           <RequerAuth>
