@@ -4,5 +4,6 @@ public enum OrigemCliente {
     INDICACAO,
     INSTAGRAM,
     GOOGLE,
-    PASSOU_NA_RUA
+    PASSOU_NA_RUA,
+    ONLINE
 }
