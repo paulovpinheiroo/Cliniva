@@ -17,6 +17,10 @@ public record CreateServicoRequestDTO(
 
                 @NotNull(message = "Valor é obrigatório")
                 @Positive(message = "Valor deve ser positivo")
-                BigDecimal valor) {
+                BigDecimal valor,
+
+                @NotNull(message = "Duração é obrigatória")
+                @Positive(message = "Duração deve ser positiva")
+                Integer duracaoMinutos) {
 
 }

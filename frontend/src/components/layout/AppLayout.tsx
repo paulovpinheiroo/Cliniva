@@ -23,6 +23,7 @@ export function AppLayout() {
     { to: '/dashboard', label: 'Dashboard', end: true },
     { to: '/clientes', label: 'Clientes' },
     { to: '/servicos', label: 'Serviços' },
+    { to: '/agenda', label: 'Agenda' },
     { to: '/estoque', label: 'Estoque' },
     { to: '/atendimentos', label: 'Atendimentos' },
     ...(usuario?.papel === 'ADMIN' ? [{ to: '/admin', label: 'Admin' }] : []),

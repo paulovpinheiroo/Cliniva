@@ -1,6 +1,6 @@
 export type ClienteStatus = 'PROSPECT' | 'ATIVO' | 'INATIVO'
 
-export type OrigemCliente = 'INDICACAO' | 'INSTAGRAM' | 'GOOGLE' | 'PASSOU_NA_RUA'
+export type OrigemCliente = 'INDICACAO' | 'INSTAGRAM' | 'GOOGLE' | 'PASSOU_NA_RUA' | 'ONLINE'
 
 export type CanalPreferido = 'WHATSAPP' | 'INSTAGRAM' | 'EMAIL' | 'LIGACAO'
 
@@ -50,6 +50,7 @@ export interface Servico {
   nome: string
   descricao: string | null
   valor: number
+  duracaoMinutos: number
 }
 
 export interface Item {
@@ -98,6 +99,7 @@ export interface ServicoInput {
   nome: string
   descricao: string
   valor: number
+  duracaoMinutos: number
 }
 
 export interface ItemInput {
@@ -133,4 +135,66 @@ export interface AtendimentoInput {
   clienteId: string
   dataAtendimento: string
   servicos: AtendimentoServicoInput[]
+}
+
+export interface AtendimentoUpdate {
+  clienteId: string
+  dataAtendimento: string
+}
+
+export interface AgendaItem {
+  id: string
+  clienteId: string
+  clienteNome: string
+  clienteTelefone: string
+  inicio: string
+  fim: string
+  duracaoMinutos: number
+  status: StatusAtendimento
+  valorTotal: number
+  servicos: string[]
+}
+
+export interface HorarioAtendimento {
+  diaSemana: number
+  abertura: string
+  fechamento: string
+  ativo: boolean
+}
+
+export interface DisponibilidadeDia {
+  data: string
+  duracaoMinutos: number
+  horarios: string[]
+}
+
+export interface AgendaLink {
+  slug: string
+  caminho: string
+}
+
+export interface ServicoPublico {
+  id: string
+  nome: string
+  descricao: string | null
+  valor: number
+  duracaoMinutos: number
+  clinica: string
+}
+
+export interface BookingInput {
+  servicoId: string
+  dataHora: string
+  nome: string
+  telefone: string
+  email?: string
+}
+
+export interface BookingResult {
+  id: string
+  dataAtendimento: string
+  duracaoMinutos: number
+  servico: string
+  clinica: string
+  cliente: string
 }

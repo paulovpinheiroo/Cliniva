@@ -42,6 +42,8 @@ public class Atendimento {
     private LocalDate dataCriacao;
     @Column(name = "data_atendimento", nullable = false)
     private LocalDateTime dataAtendimento;
+    @Column(name = "duracao_minutos", nullable = false)
+    private Integer duracaoMinutos = 30;
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private StatusAtendimento status;

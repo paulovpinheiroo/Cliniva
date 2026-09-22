@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({ RecursoDuplicadoException.class, EstoqueInsuficienteException.class,
-            TransicaoStatusInvalidaException.class, RecursoEmUsoException.class })
+            TransicaoStatusInvalidaException.class, RecursoEmUsoException.class, HorarioIndisponivelException.class })
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleConflito(RuntimeException ex) {
         return new ErrorResponse(HttpStatus.CONFLICT.value(), ex.getMessage());

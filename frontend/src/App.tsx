@@ -5,7 +5,9 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { HomeRouter } from '@/components/layout/HomeRouter'
 import { AdminPage } from '@/pages/AdminPage'
 import { AdminLoginPage } from '@/pages/AdminLoginPage'
+import { AgendaPage } from '@/pages/AgendaPage'
 import { AtendimentosPage } from '@/pages/AtendimentosPage'
+import { BookingPage } from '@/pages/BookingPage'
 import { CadastroPage } from '@/pages/CadastroPage'
 import { ClienteDetalhePage } from '@/pages/ClienteDetalhePage'
 import { ClientesPage } from '@/pages/ClientesPage'
@@ -22,6 +24,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login-admin" element={<AdminLoginPage />} />
       <Route path="/cadastro" element={<CadastroPage />} />
+      <Route path="/agendar/:slug" element={<BookingPage />} />
       <Route
         element={
           <RequerAuth>
@@ -33,6 +36,7 @@ function App() {
         <Route path="/clientes" element={<ClientesPage />} />
         <Route path="/clientes/:id" element={<ClienteDetalhePage />} />
         <Route path="/servicos" element={<ServicosPage />} />
+        <Route path="/agenda" element={<AgendaPage />} />
         <Route path="/estoque" element={<EstoquePage />} />
         <Route path="/atendimentos" element={<AtendimentosPage />} />
         <Route path="/admin" element={<RequerAdmin><AdminPage /></RequerAdmin>} />

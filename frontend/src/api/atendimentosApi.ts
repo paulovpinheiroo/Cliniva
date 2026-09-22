@@ -1,5 +1,12 @@
 import { http } from './http'
-import type { Atendimento, AtendimentoFiltros, AtendimentoInput, AtendimentoResumo, StatusAtendimento } from '@/types'
+import type {
+  Atendimento,
+  AtendimentoFiltros,
+  AtendimentoInput,
+  AtendimentoResumo,
+  AtendimentoUpdate,
+  StatusAtendimento,
+} from '@/types'
 
 function buildQuery(filtros: AtendimentoFiltros): string {
   const params = new URLSearchParams()
@@ -15,6 +22,7 @@ export const atendimentosApi = {
   listar: (filtros: AtendimentoFiltros = {}) => http.get<AtendimentoResumo[]>(`/atendimentos${buildQuery(filtros)}`),
   buscar: (id: string) => http.get<Atendimento>(`/atendimentos/${id}`),
   criar: (input: AtendimentoInput) => http.post<Atendimento>('/atendimentos', input),
+  atualizar: (id: string, input: AtendimentoUpdate) => http.put<Atendimento>(`/atendimentos/${id}`, input),
   alterarStatus: (id: string, novoStatus: StatusAtendimento) =>
     http.patch<Atendimento>(`/atendimentos/${id}/status`, { novoStatus }),
 }

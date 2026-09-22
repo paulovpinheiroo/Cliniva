@@ -52,6 +52,7 @@ class ServicoServiceTest {
         servico.setClinica(CLINICA);
         servico.setNome(nome);
         servico.setValor(new BigDecimal(valor));
+        servico.setDuracaoMinutos(30);
         if (id != null) {
             org.springframework.test.util.ReflectionTestUtils.setField(servico, "id", id);
         }
@@ -65,10 +66,11 @@ class ServicoServiceTest {
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
         var resposta = servicoService.createServico(CLINICA, new CreateServicoRequestDTO(
-                "Limpeza de Pele", "limpeza profunda", new BigDecimal("120.00")));
+                "Limpeza de Pele", "limpeza profunda", new BigDecimal("120.00"), 45));
 
         assertThat(resposta.nome()).isEqualTo("Limpeza de Pele");
         assertThat(resposta.valor()).isEqualByComparingTo("120.00");
+        assertThat(resposta.duracaoMinutos()).isEqualTo(45);
     }
 
     @Test
@@ -76,7 +78,7 @@ class ServicoServiceTest {
         when(servicoRepository.existsByNomeAndClinica("Limpeza de Pele", CLINICA)).thenReturn(true);
 
         assertThatThrownBy(() -> servicoService.createServico(CLINICA,
-                new CreateServicoRequestDTO("Limpeza de Pele", null, new BigDecimal("120.00"))))
+                new CreateServicoRequestDTO("Limpeza de Pele", null, new BigDecimal("120.00"), 30)))
                 .isInstanceOf(RecursoDuplicadoException.class);
 
         verify(servicoRepository, never()).save(any());
@@ -110,7 +112,7 @@ class ServicoServiceTest {
         when(servicoRepository.existsByNomeAndIdNotAndClinica("Drenagem", id, CLINICA)).thenReturn(true);
 
         assertThatThrownBy(() -> servicoService.atualizarServico(
-                CLINICA, id, new UpdateServicoRequestDTO("Drenagem", null, new BigDecimal("100.00"))))
+                CLINICA, id, new UpdateServicoRequestDTO("Drenagem", null, new BigDecimal("100.00"), 30)))
                 .isInstanceOf(RecursoDuplicadoException.class);
     }
 
@@ -126,10 +128,11 @@ class ServicoServiceTest {
 
         var resposta = servicoService.atualizarServico(
                 CLINICA, id, new UpdateServicoRequestDTO("Massagem Relaxante", "com óleos",
-                        new BigDecimal("110.00")));
+                        new BigDecimal("110.00"), 60));
 
         assertThat(resposta.nome()).isEqualTo("Massagem Relaxante");
         assertThat(resposta.valor()).isEqualByComparingTo("110.00");
+        assertThat(resposta.duracaoMinutos()).isEqualTo(60);
     }
 
     @Test
