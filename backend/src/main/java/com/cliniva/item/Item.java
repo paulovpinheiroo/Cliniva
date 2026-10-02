@@ -30,7 +30,9 @@ public class Item {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "clinica_id", nullable = false)
     private Clinica clinica;
-    @Column(name = "nome", nullable = false, unique = true)
+    // Unicidade por clínica vem do índice uk_item_nome_clinica (migration).
+    // `unique = true` aqui criaria uma restrição global no Hibernate.
+    @Column(name = "nome", nullable = false)
     private String nome;
     @Column(name = "quantidade", nullable = false)
     private BigDecimal quantidadeEmEstoque = BigDecimal.ZERO;

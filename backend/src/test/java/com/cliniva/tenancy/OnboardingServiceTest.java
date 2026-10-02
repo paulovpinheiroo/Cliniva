@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,30 +16,34 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cliniva.agenda.AgendaService;
+import com.cliniva.exception.RecursoDuplicadoException;
 import com.cliniva.tenancy.dtos.TenancyDtos.CadastroOnboardingRequestDTO;
 
 @ExtendWith(MockitoExtension.class)
 class OnboardingServiceTest {
 
     @Mock
-    private ClinicaRepository clinicaRepository;
-    @Mock
     private UsuarioRepository usuarioRepository;
     @Mock
     private SupabaseUsersService supabaseUsers;
+    @Mock
+    private ClinicaProvisioningService clinicaProvisioning;
 
     @InjectMocks
     private OnboardingService onboardingService;
 
     @Test
-    void deveCadastrarClinicaEResponsavelOwnerr() {
+    void deveCadastrarClinicaEResponsavelOwner() {
+        Clinica clinica = new Clinica();
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+        clinica.setNome("Clínica Teste");
+        clinica.setSlug("clinica-teste");
+
         when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.empty());
-        when(clinicaRepository.existsByNome("Clínica Teste")).thenReturn(false);
         when(supabaseUsers.configurada()).thenReturn(false);
-        when(clinicaRepository.save(any(Clinica.class)))
-                .thenAnswer(invocacao -> invocacao.getArgument(0));
-        when(usuarioRepository.save(any(Usuario.class)))
-                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(clinicaProvisioning.criarClinica("Clínica Teste")).thenReturn(clinica);
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
 
         var resposta = onboardingService.cadastrarClinica(
                 new CadastroOnboardingRequestDTO("Clínica Teste", "Dona Maria", "dona@email.com"));
@@ -54,15 +59,17 @@ class OnboardingServiceTest {
 
     @Test
     void deveVincularUsuarioSupabaseJaExistente() {
+        Clinica clinica = new Clinica();
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+        clinica.setNome("Clínica Teste");
+        clinica.setSlug("clinica-teste");
+
         when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.empty());
-        when(clinicaRepository.existsByNome("Clínica Teste")).thenReturn(false);
         when(supabaseUsers.configurada()).thenReturn(true);
         when(supabaseUsers.buscarPorEmail("dona@email.com"))
                 .thenReturn(Optional.of(new SupabaseUsersService.UsuarioSupabase("sup-123", "dona@email.com")));
-        when(clinicaRepository.save(any(Clinica.class)))
-                .thenAnswer(invocacao -> invocacao.getArgument(0));
-        when(usuarioRepository.save(any(Usuario.class)))
-                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(clinicaProvisioning.criarClinica("Clínica Teste")).thenReturn(clinica);
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
 
         onboardingService.cadastrarClinica(
                 new CadastroOnboardingRequestDTO("Clínica Teste", "Dona Maria", "dona@email.com"));
@@ -73,19 +80,26 @@ class OnboardingServiceTest {
     }
 
     @Test
-    void naoDeveCadastrarComNomeDeClinicaJaExistente() {
-        when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.empty());
-        when(clinicaRepository.existsByNome("Clínica Teste")).thenReturn(true);
+    void naoDevePermitirQueOnboardingRebaixeAdminMaster() {
+        Usuario admin = new Usuario();
+        admin.setEmail("admin@cliniva.com");
+        admin.setPapel(Papel.ADMIN);
+        when(usuarioRepository.findByEmail("admin@cliniva.com")).thenReturn(Optional.of(admin));
+        when(supabaseUsers.configurada()).thenReturn(false);
 
         assertThatThrownBy(() -> onboardingService.cadastrarClinica(
-                new CadastroOnboardingRequestDTO("Clínica Teste", "Dona Maria", "dona@email.com")))
-                .hasMessageContaining("nome");
+                new CadastroOnboardingRequestDTO("Clínica X", "Admin", "admin@cliniva.com")))
+                .isInstanceOf(com.cliniva.exception.AcessoNaoPermitidoException.class)
+                .hasMessageContaining("administradora");
+
+        verify(clinicaProvisioning, org.mockito.Mockito.never()).criarClinica(any());
     }
 
     @Test
     void deveRetornarClinicaJaExistenteSeEmailJaCadastrado() {
         Clinica clinica = new Clinica();
         clinica.setNome("Clínica Existente");
+        clinica.setSlug("clinica-existente");
         Usuario existente = new Usuario();
         existente.setId(java.util.UUID.fromString("00000000-0000-0000-0000-000000000009"));
         existente.setEmail("dona@email.com");
@@ -98,5 +112,24 @@ class OnboardingServiceTest {
 
         assertThat(resposta.responsavelId()).isEqualTo(existente.getId());
         assertThat(resposta.clinicaNome()).isEqualTo("Clínica Existente");
+    }
+
+    @Test
+    void deveDelegarCriacaoDaClinicaAoProvisionamento() {
+        Clinica clinica = new Clinica();
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+        clinica.setNome("Clínica Teste");
+        clinica.setSlug("clinica-teste");
+
+        when(usuarioRepository.findByEmail("dona@email.com")).thenReturn(Optional.empty());
+        when(supabaseUsers.configurada()).thenReturn(false);
+        when(clinicaProvisioning.criarClinica("Clínica Teste")).thenReturn(clinica);
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
+
+        onboardingService.cadastrarClinica(
+                new CadastroOnboardingRequestDTO("Clínica Teste", "Dona Maria", "dona@email.com"));
+
+        // slug + expediente vêm garantidos pelo provisionamento compartilhado
+        verify(clinicaProvisioning).criarClinica("Clínica Teste");
     }
 }

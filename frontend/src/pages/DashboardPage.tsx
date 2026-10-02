@@ -5,6 +5,7 @@ import { atendimentosApi } from '@/api/atendimentosApi'
 import { clientesApi } from '@/api/clientesApi'
 import { itensApi } from '@/api/itensApi'
 import { servicosApi } from '@/api/servicosApi'
+import { ResumoDoDiaCard } from '@/components/resumo/ResumoDoDiaCard'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Spinner } from '@/components/ui/Spinner'
@@ -140,7 +141,11 @@ export function DashboardPage() {
         <StatCell label="Clientes" value={clientes?.length ?? 0} to="/clientes" delay={0} />
         <StatCell label="Serviços" value={servicos?.length ?? 0} to="/servicos" delay={60} />
         <StatCell label="Itens no estoque" value={itens?.length ?? 0} to="/estoque" delay={120} />
-        <StatCell label="Atendimentos hoje" value={atendimentosHoje.length} to="/atendimentos" delay={180} />
+        <StatCell label="Atendimentos hoje" value={atendimentosHoje.length} to="/agenda" delay={180} />
+      </div>
+
+      <div className="mb-14">
+        <ResumoDoDiaCard />
       </div>
 
       <div className="grid grid-cols-1 gap-x-14 gap-y-14 lg:grid-cols-3">
@@ -148,7 +153,7 @@ export function DashboardPage() {
           <Section
             title="Próximos atendimentos"
             action={
-              <Link className={actionLink} to="/atendimentos">
+              <Link className={actionLink} to="/agenda">
                 Ver todos
               </Link>
             }

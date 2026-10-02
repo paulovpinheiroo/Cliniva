@@ -311,6 +311,7 @@ export function ClientesPage() {
             <option value="INSTAGRAM">Instagram</option>
             <option value="GOOGLE">Google</option>
             <option value="PASSOU_NA_RUA">Passou na rua</option>
+            <option value="ONLINE">Online</option>
           </Select>
           <Select
             label="Canal preferido"

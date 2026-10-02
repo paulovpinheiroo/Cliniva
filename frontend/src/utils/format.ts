@@ -44,6 +44,7 @@ const ORIGEM_LABEL: Record<string, string> = {
   INSTAGRAM: 'Instagram',
   GOOGLE: 'Google',
   PASSOU_NA_RUA: 'Passou na rua',
+  ONLINE: 'Online',
 }
 
 export function origemLabel(origem: string): string {

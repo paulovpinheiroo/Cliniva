@@ -11,7 +11,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
     @EntityGraph(attributePaths = "clinica")
     Optional<Usuario> findBySupabaseUserId(String supabaseUserId);
 
-    Optional<Usuario> findByEmail(String email);
+    @EntityGraph(attributePaths = "clinica")
+    Optional<Usuario> findByEmailIgnoreCase(String email);
+
+    default Optional<Usuario> findByEmail(String email) {
+        return findByEmailIgnoreCase(email);
+    }
 
     List<Usuario> findByClinica_IdOrderByNomeAsc(UUID clinicaId);
 

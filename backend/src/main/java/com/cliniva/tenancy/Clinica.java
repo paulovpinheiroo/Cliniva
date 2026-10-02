@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,6 +26,8 @@ public class Clinica {
     private UUID id;
     @Column(name = "nome", nullable = false)
     private String nome;
+    @Column(name = "slug", nullable = false)
+    private String slug;
     @Column(name = "ativa", nullable = false)
     private boolean ativa = true;
     @Column(name = "criada_em", nullable = false, updatable = false)

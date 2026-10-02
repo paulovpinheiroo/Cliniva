@@ -21,6 +21,51 @@ jobs:
       - name: Rodar testes
         run: ./mvnw -B test
 
+  # Rede de segurança do schema.
+  #
+  # Os testes acima rodam em H2 com ddl-auto=create-drop, ou seja, o schema
+  # vem do Hibernate e as migrations SQL NUNCA são exercitadas. Divergência
+  # de tipo entre migration e entidade só aparece no deploy de produção —
+  # e o processo morre em silêncio, enquanto o health check continua
+  # respondendo 200 do container antigo.
+  #
+  # Aqui aplicamos as migrations num Postgres real e subimos a aplicação com
+  # ddl-auto=validate. Foi exatamente esse check que pegou a migration 07
+  # faltando na main.
+  schema:
+    name: Schema (migrations × entidades)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cliniva
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: cliniva
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      PORT_APP: "8099"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Conferir migrations contra Postgres real e subir a app
+        run: ./scripts/check-migrations.sh
+
   frontend:
     name: Frontend (lint + build)
     runs-on: ubuntu-latest

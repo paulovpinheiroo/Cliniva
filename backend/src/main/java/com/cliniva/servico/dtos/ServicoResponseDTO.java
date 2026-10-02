@@ -7,6 +7,7 @@ public record ServicoResponseDTO(
                 UUID id,
                 String nome,
                 String descricao,
-                BigDecimal valor) {
+                BigDecimal valor,
+                Integer duracaoMinutos) {
 
 }

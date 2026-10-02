@@ -2,6 +2,7 @@ package com.cliniva.atendimento.model;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import com.cliniva.atendimento.enums.StatusAtendimento;
@@ -38,10 +39,13 @@ public class Atendimento {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "clinica_id", nullable = false)
     private Clinica clinica;
+    @Setter
     @Column(name = "data_criacao", nullable = false)
     private LocalDate dataCriacao;
     @Column(name = "data_atendimento", nullable = false)
     private LocalDateTime dataAtendimento;
+    @Column(name = "duracao_minutos", nullable = false)
+    private Integer duracaoMinutos = 30;
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private StatusAtendimento status;
@@ -49,9 +53,17 @@ public class Atendimento {
     @ManyToOne
     private Cliente cliente;
 
+    /**
+     * Fallback quando o atendimento é criado fora do {@code AtendimentoService}
+     * (importação, seed). O caminho normal define a data pelo {@code Clock}
+     * injetado: {@code LocalDate.now()} sem zona usaria o fuso do container
+     * (UTC no Render) e, entre 21h e 24h no Brasil, gravaria o dia seguinte.
+     */
     @PrePersist
     public void prePersist() {
-        this.dataCriacao = LocalDate.now();
+        if (this.dataCriacao == null) {
+            this.dataCriacao = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
+        }
     }
 
     public void setStatus(StatusAtendimento status) {

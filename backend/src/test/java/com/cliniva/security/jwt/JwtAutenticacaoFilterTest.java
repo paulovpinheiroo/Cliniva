@@ -1,8 +1,11 @@
 package com.cliniva.security.jwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
@@ -27,6 +30,10 @@ import com.cliniva.tenancy.UsuarioRepository;
 
 import io.jsonwebtoken.Claims;
 
+/**
+ * Cobre o binding do ADMIN master: o seed da migration 03 cria o usuário com
+ * supabase_user_id nulo, então o filtro precisa vincular pelo e-mail do JWT.
+ */
 @ExtendWith(MockitoExtension.class)
 class JwtAutenticacaoFilterTest {
 
@@ -161,5 +168,93 @@ class JwtAutenticacaoFilterTest {
         UsuarioPrincipal principal = (UsuarioPrincipal) authentication.getPrincipal();
         assertThat(principal.papel()).isEqualTo(Papel.ADMIN);
         assertThat(principal.clinica()).isNull();
+    }
+
+    /**
+     * O seed da migration 03 cria o ADMIN master com supabase_user_id nulo.
+     * O filtro precisa vincular pelo e-mail do JWT — sem isso o admin master
+     * nunca consegue entrar em /admin.
+     */
+    @Test
+    void deveVincularAdminMasterPeloEmailQuandoNaoHaSupabaseUserId() throws Exception {
+        String supabaseUserId = UUID.randomUUID().toString();
+        Usuario admin = new Usuario();
+        org.springframework.test.util.ReflectionTestUtils.setField(admin, "id", UUID.randomUUID());
+        admin.setSupabaseUserId(null);
+        admin.setPapel(Papel.ADMIN);
+        admin.setAtivo(true);
+        admin.setNome("Administrador Cliniva");
+        admin.setEmail("admin@cliniva.com");
+
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn(supabaseUserId);
+        when(claims.get("email", String.class)).thenReturn("admin@cliniva.com");
+        when(verificador.verificar(anyString())).thenReturn(claims);
+        when(usuarioRepository.findBySupabaseUserId(supabaseUserId)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmailIgnoreCase("admin@cliniva.com")).thenReturn(Optional.of(admin));
+
+        SecurityContextHolder.clearContext();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-valido");
+
+        filtro.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        // vínculo persistido no banco
+        verify(usuarioRepository).save(admin);
+        assertThat(admin.getSupabaseUserId()).isEqualTo(supabaseUserId);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(authentication).isNotNull();
+        UsuarioPrincipal principal = (UsuarioPrincipal) authentication.getPrincipal();
+        assertThat(principal.papel()).isEqualTo(Papel.ADMIN);
+        assertThat(principal.supabaseUserId()).isEqualTo(supabaseUserId);
+    }
+
+    @Test
+    void naoDeveVincularPorEmailQuandoJaExisteSupabaseUserId() throws Exception {
+        String supabaseUserId = UUID.randomUUID().toString();
+        Usuario admin = new Usuario();
+        org.springframework.test.util.ReflectionTestUtils.setField(admin, "id", UUID.randomUUID());
+        admin.setSupabaseUserId("outro-id");
+        admin.setPapel(Papel.ADMIN);
+        admin.setAtivo(true);
+        admin.setEmail("admin@cliniva.com");
+
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn(supabaseUserId);
+        when(claims.get("email", String.class)).thenReturn("admin@cliniva.com");
+        when(verificador.verificar(anyString())).thenReturn(claims);
+        when(usuarioRepository.findBySupabaseUserId(supabaseUserId)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmailIgnoreCase("admin@cliniva.com")).thenReturn(Optional.of(admin));
+
+        SecurityContextHolder.clearContext();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-valido");
+
+        filtro.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        // não sobrescreve um vínculo existente
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        assertThat(admin.getSupabaseUserId()).isEqualTo("outro-id");
+    }
+
+    @Test
+    void naoDeveAutenticarQuandoEmailNaoExisteNoBanco() throws Exception {
+        String supabaseUserId = UUID.randomUUID().toString();
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn(supabaseUserId);
+        when(claims.get("email", String.class)).thenReturn("desconhecido@email.com");
+        when(verificador.verificar(anyString())).thenReturn(claims);
+        when(usuarioRepository.findBySupabaseUserId(supabaseUserId)).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmailIgnoreCase("desconhecido@email.com"))
+                .thenReturn(Optional.empty());
+
+        SecurityContextHolder.clearContext();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-valido");
+
+        filtro.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }

@@ -50,12 +50,14 @@ class ClienteRepositoryTest {
     private Clinica clinicaPadrao() {
         Clinica clinica = new Clinica();
         clinica.setNome("Clínica A");
+        clinica.setSlug("clinica-a");
         return clinicaRepository.save(clinica);
     }
 
     private Clinica outraClinica() {
         Clinica clinica = new Clinica();
         clinica.setNome("Clínica B");
+        clinica.setSlug("clinica-b");
         return clinicaRepository.save(clinica);
     }
 

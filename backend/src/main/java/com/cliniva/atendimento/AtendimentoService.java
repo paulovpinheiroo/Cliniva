@@ -1,6 +1,8 @@
 package com.cliniva.atendimento;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.cliniva.agenda.AgendaService;
 import com.cliniva.atendimento.dtos.AtendimentoResumoResponseDTO;
 import com.cliniva.atendimento.dtos.AtendimentoResponseDTO;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO;
@@ -49,6 +52,8 @@ public class AtendimentoService {
         private final ClienteRepository clienteRepository;
         private final ServicoRepository servicoRepository;
         private final ItemRepository itemRepository;
+        private final AgendaService agendaService;
+        private final Clock clock;
 
         @Transactional
         public CreateAtendimentoResponseDTO createAtendimento(Clinica clinica,
@@ -56,25 +61,46 @@ public class AtendimentoService {
                 Cliente cliente = clienteRepository.findByIdAndClinica(requestDTO.clienteId(), clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
 
-                Atendimento atendimento = new Atendimento();
-                atendimento.setClinica(clinica);
-                atendimento.setCliente(cliente);
-                atendimento.setDataAtendimento(requestDTO.dataAtendimento());
-                atendimento.setStatus(StatusAtendimento.AGENDADO);
-                atendimentoRepository.save(atendimento);
-
-                List<ServicoRealizadoDTO> servicosRealizados = new ArrayList<>();
-
-                for (ServicoSelecionadoDTO servicoSelecionado : requestDTO.servicos()) {
+                List<ServicoSelecionadoDTO> servicosSelecionados = requestDTO.servicos();
+                List<Servico> servicos = new ArrayList<>();
+                for (ServicoSelecionadoDTO servicoSelecionado : servicosSelecionados) {
                         Servico servicoEncontrado = servicoRepository
                                         .findByIdAndClinica(servicoSelecionado.servicoId(), clinica)
                                         .orElseThrow(() -> new RecursoNaoEncontradoException(
                                                         "Serviço não encontrado"));
-
-                        if (atendimentoServicoRepository.existsByAtendimentoAndServico(atendimento,
-                                        servicoEncontrado)) {
+                        if (servicos.stream().anyMatch(
+                                        resolvido -> resolvido.getId().equals(servicoEncontrado.getId()))) {
                                 throw new RecursoDuplicadoException("Serviço já adicionado a este atendimento.");
                         }
+                        servicos.add(servicoEncontrado);
+                }
+
+                int duracaoTotal = servicos.stream().mapToInt(Servico::getDuracaoMinutos).sum();
+                if (duracaoTotal > AgendaService.DURACAO_MAXIMA_MINUTOS) {
+                        throw new TransicaoStatusInvalidaException("A soma das durações dos serviços excede "
+                                        + AgendaService.DURACAO_MAXIMA_MINUTOS + " minutos");
+                }
+                // validarDisponibilidade adquire o lock pessimista da clínica,
+                // garantindo check + insert atômicos (evita double booking e
+                // estoque negativo em agendamentos simultâneos).
+                agendaService.validarDisponibilidade(clinica, requestDTO.dataAtendimento(), duracaoTotal, null);
+
+                Atendimento atendimento = new Atendimento();
+                atendimento.setClinica(clinica);
+                atendimento.setCliente(cliente);
+                atendimento.setDataAtendimento(requestDTO.dataAtendimento());
+                atendimento.setDuracaoMinutos(duracaoTotal);
+                atendimento.setStatus(StatusAtendimento.AGENDADO);
+                // Pelo Clock da aplicação, e não pelo fuso do container: entre
+                // 21h e 24h no Brasil o UTC já é o dia seguinte.
+                atendimento.setDataCriacao(LocalDate.now(clock));
+                atendimentoRepository.save(atendimento);
+
+                List<ServicoRealizadoDTO> servicosRealizados = new ArrayList<>();
+
+                for (int i = 0; i < servicos.size(); i++) {
+                        Servico servicoEncontrado = servicos.get(i);
+                        ServicoSelecionadoDTO servicoSelecionado = servicosSelecionados.get(i);
 
                         AtendimentoServico atendimentoServico = new AtendimentoServico();
                         atendimentoServico.setAtendimento(atendimento);
@@ -84,7 +110,17 @@ public class AtendimentoService {
 
                         List<ItemUsadoRealDTO> itensRealizados = new ArrayList<>();
 
-                        for (ItemUsadoDTO itemUsadoDTO : servicoSelecionado.itensExtras()) {
+                        // `itensExtras` é opcional na API: ausente precisa
+                        // significar "nenhum item", não NPE. Sem este guarda,
+                        // criar um atendimento sem itens extras quebrava com
+                        // NullPointerException — que ainda virava 401 na
+                        // resposta (ver SecurityConfig), então parecia falha
+                        // de autenticação em vez de bug.
+                        List<ItemUsadoDTO> itensExtras = servicoSelecionado.itensExtras() != null
+                                        ? servicoSelecionado.itensExtras()
+                                        : List.of();
+
+                        for (ItemUsadoDTO itemUsadoDTO : itensExtras) {
                                 Item itemEncontrado = itemRepository.findByIdAndClinica(itemUsadoDTO.itemId(),
                                                 clinica)
                                                 .orElseThrow(() -> new RecursoNaoEncontradoException(
@@ -127,6 +163,7 @@ public class AtendimentoService {
                                 cliente.getId(),
                                 atendimento.getDataAtendimento(),
                                 atendimento.getDataCriacao(),
+                                atendimento.getDuracaoMinutos(),
                                 atendimento.getStatus(),
                                 servicosRealizados);
         }
@@ -171,6 +208,9 @@ public class AtendimentoService {
 
                 Cliente cliente = clienteRepository.findByIdAndClinica(requestDTO.clienteId(), clinica)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado"));
+
+                agendaService.validarDisponibilidade(clinica, requestDTO.dataAtendimento(),
+                                atendimento.getDuracaoMinutos(), id);
 
                 atendimento.setCliente(cliente);
                 atendimento.setDataAtendimento(requestDTO.dataAtendimento());

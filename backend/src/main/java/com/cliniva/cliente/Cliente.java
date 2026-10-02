@@ -37,9 +37,12 @@ public class Cliente {
     private Clinica clinica;
     @Column(name = "nome", nullable = false)
     private String nome;
-    @Column(name = "email", unique = true)
+    // A unicidade é POR CLÍNICA (uk_cliente_email_clinica / uk_cliente_telefone_clinica),
+    // criada pelas migrations. Não declarar `unique = true` aqui: o Hibernate
+    // geraria uma constraint global, que quebraria a segunda clínica do tenant.
+    @Column(name = "email")
     private String email;
-    @Column(name = "telefone", unique = true, nullable = false)
+    @Column(name = "telefone", nullable = false)
     private String telefone;
     @Column(name = "data_nascimento")
     private LocalDate dataNascimento;

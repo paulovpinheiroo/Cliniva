@@ -3,6 +3,8 @@ package com.cliniva.security.config;
 import java.io.IOException;
 import java.util.List;
 
+import jakarta.servlet.DispatcherType;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,8 +42,22 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(excecoes -> excecoes.authenticationEntryPoint(naoAutenticado()))
                 .authorizeHttpRequests(autoriza -> autoriza
+                        // Defesa em profundidade. O dispatch de erro do
+                        // container NÃO passa pelo JwtAutenticacaoFilter
+                        // (OncePerRequestFilter pula dispatch de erro), então
+                        // o SecurityContext chega vazio aqui e o
+                        // AuthorizationFilter nega a requisição de novo.
+                        //
+                        // Em produção isso fazia um NullPointerException ao
+                        // criar atendimento sem `itensExtras` responder 401
+                        // "Autenticação necessária" em vez de 500. O
+                        // GlobalExceptionHandler agora trata o NPE
+                        // diretamente, que resolve o caso observado; esta
+                        // linha cobre o que chegar ao container sem
+                        // tratamento, preservando o status real.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/public/**", "/actuator/health").permitAll()
+                        .requestMatchers("/api/public/**", "/api/saude/**", "/actuator/health").permitAll()
                         .requestMatchers("/api/**").authenticated())
                 .addFilterBefore(jwtFiltro, UsernamePasswordAuthenticationFilter.class);
         return http.build();

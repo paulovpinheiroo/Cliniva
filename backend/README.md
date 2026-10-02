@@ -30,11 +30,21 @@ src/main/java/com/cliniva/
 │   ├── ClienteService.java       Regras de negócio
 │   ├── ClienteController.java    Endpoints REST
 │   └── dtos/                     Records de entrada/saída
-├── servico/                      Domínio Serviço (catálogo)
+├── servico/                      Domínio Serviço (catálogo, com duração)
 ├── item/                         Domínio Item (estoque)
-├── atendimento/                  Domínio Atendimento (agenda)
+├── atendimento/                  Domínio Atendimento
 │   ├── enums/StatusAtendimento.java
 │   └── model/                    Atendimento, AtendimentoServico, AtendimentoItem
+├── agenda/                       Expediente, disponibilidade e grade do dia
+│   ├── AgendaService.java        Regras de agenda + lock por clínica
+│   ├── model/                    HorarioAtendimento (PK composta)
+│   └── repository/
+├── booking/                      Booking público por slug (+ rate limit)
+├── resumo/                       Resumo do dia (cache + LLM)
+├── tenancy/                      Clínica, Usuário, contexto e onboarding
+├── admin/                        Painel da plataforma
+├── security/jwt                  Verificação JWKS + filtro de autenticação
+├── config/                       ClockConfig (relógio injetável)
 └── exception/                    Tratamento global de erros + exceptions de domínio
 ```
 
@@ -55,16 +65,32 @@ src/main/java/com/cliniva/
 
 ## Banco de dados
 
-Crie o banco e o usuário uma única vez:
+O schema é versionado em `supabase/migrations/` e o backend roda com
+`ddl-auto=validate`: **quem cria o schema é a migration, não o Hibernate**.
+Se faltar alguma coluna, a aplicação não sobe.
+
+Suba o Postgres local com as migrations aplicadas:
 
 ```bash
-sudo -u postgres psql -c "CREATE ROLE cliniva LOGIN PASSWORD 'cliniva';"
-sudo -u postgres psql -c "CREATE DATABASE cliniva OWNER cliniva;"
+# pela raiz do repositório
+supabase start
+# e aponte o backend para o banco do Supabase CLI:
+SPRING_DATASOURCE_URL='jdbc:postgresql://localhost:54322/postgres' \
+SPRING_DATASOURCE_USER=postgres \
+SPRING_DATASOURCE_PASSWORD=postgres \
+mvn spring-boot:run
 ```
 
-As tabelas são criadas/atualizadas automaticamente pelo Hibernate
-(`spring.jpa.hibernate.ddl-auto=update`) — o `CREATE ROLE`/`CREATE DATABASE`
-é só a primeira vez.
+Alternativa com Docker Compose (na raiz): `docker compose up -d --build`
+(Postgres em `5433`, API em `8080`, UI em `5173`).
+
+> ⚠️ No Compose, as migrations só são aplicadas quando o volume do Postgres
+> está vazio. Para um ambiente já iniciado, aplique a migration na mão:
+>
+> ```bash
+> docker compose exec -T db psql -U postgres -d cliniva \
+>   < supabase/migrations/20260909000006_agenda_hardening.sql
+> ```
 
 ### Configuração (variáveis de ambiente)
 
@@ -73,6 +99,10 @@ As tabelas são criadas/atualizadas automaticamente pelo Hibernate
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/cliniva` |
 | `SPRING_DATASOURCE_USER` | `cliniva` |
 | `SPRING_DATASOURCE_PASSWORD` | `cliniva` |
+| `SUPABASE_URL` | vazio (JWKS + API admin do Supabase) |
+| `SUPABASE_SERVICE_ROLE_KEY` | vazio (criar usuário / reset de senha) |
+| `CLINIVA_CORS_ORIGIN` | `http://localhost:5173` |
+| `cliniva.zona` | `America/Sao_Paulo` (relógio da agenda) |
 
 ## Rodar
 
@@ -84,7 +114,7 @@ mvn spring-boot:run          # API em http://localhost:8080
 Testes (H2 em memória, não precisa de banco):
 
 ```bash
-mvn test                     # 59 testes unitários
+mvn test                     # 168 testes unitários/integrados
 ```
 
 Smoke test:
@@ -142,12 +172,14 @@ Validações: `nome` e `telefone` obrigatórios (máx. 120 e 20 caracteres);
 {
   "nome": "Limpeza de Pele",
   "descricao": "Limpeza profunda com extração",
-  "valor": 150.00
+  "valor": 150.00,
+  "duracaoMinutos": 60
 }
 ```
 
-Validações: `nome` obrigatório (máx. 120); `descricao` máx. 500; `valor`
-obrigatório e positivo.
+Validações: `nome` obrigatório (máx. 120); `descricao` máx. 250; `valor`
+obrigatório e positivo; `duracaoMinutos` obrigatório, positivo e **no máximo
+1440** (24 h).
 
 ### Itens (estoque) — `/api/items`
 
@@ -242,6 +274,35 @@ extras); falta de estoque → **409**.
 
 A listagem retorna a versão resumo: `id`, `nomeCliente`, `dataAtendimento`,
 `status`, `valorTotal`.
+
+### Agenda (interna) — `/api/agenda`
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/agenda?data=YYYY-MM-DD` | Atendimentos do dia (com início, fim e total) |
+| `GET` | `/api/agenda/link` | Slug e caminho público da clínica |
+| `GET` | `/api/agenda/disponibilidade?data=&servicoId=` | Horários livres de um dia para um serviço |
+| `GET` | `/api/agenda/horarios` | Expediente configurado (7 dias) |
+| `PUT` | `/api/agenda/horarios` | Atualiza o expediente (1–7 dias, sem duplicar dia) |
+
+**Regras:** só entre hoje e hoje+30 · nunca no passado · sempre dentro do
+expediente do dia · sem sobreposição com outro atendimento (bloqueado sob
+lock pessimista da clínica) · duração entre 1 e 1440 min.
+
+### Booking público — `/api/public/booking`
+
+Rotas abertas (sem token), por slug da clínica. Clínicas **inativas** não são
+encontradas.
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/{slug}/servicos` | Serviços públicos (nome, descrição, valor, duração) |
+| `GET` | `/{slug}/disponibilidade?data=&servicoId=` | Horários livres |
+| `POST` | `/{slug}` | Agenda: corpo = `servicoId`, `dataHora`, `nome`, `telefone`, `email?` |
+
+O cliente é localizado pelo telefone normalizado (somente dígitos, com DDI
+55) e, se não existir, criado com origem `ONLINE`. Há rate limit de 5
+tentativas por clínica+telefone+IP a cada 10 minutos.
 
 ### Regras de domínio do status
 

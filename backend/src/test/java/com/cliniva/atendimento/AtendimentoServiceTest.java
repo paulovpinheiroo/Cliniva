@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -19,10 +21,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.cliniva.agenda.AgendaService;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO.ServicoSelecionadoDTO;
 import com.cliniva.atendimento.dtos.CreateAtendimentoRequestDTO.ServicoSelecionadoDTO.ItemUsadoDTO;
@@ -48,6 +52,9 @@ import com.cliniva.tenancy.Clinica;
 @ExtendWith(MockitoExtension.class)
 class AtendimentoServiceTest {
 
+    @Spy
+    private final Clock clock = Clock.system(ZoneId.of("America/Sao_Paulo"));
+
         private static final UUID ATENDIMENTO_ID = UUID.randomUUID();
         private static final UUID CLIENTE_ID = UUID.randomUUID();
         private static final UUID SERVICO_ID = UUID.randomUUID();
@@ -67,6 +74,8 @@ class AtendimentoServiceTest {
         private ServicoRepository servicoRepository;
         @Mock
         private ItemRepository itemRepository;
+        @Mock
+        private AgendaService agendaService;
 
         @InjectMocks
         private AtendimentoService atendimentoService;
@@ -138,6 +147,35 @@ class AtendimentoServiceTest {
                                 List.of(new ServicoSelecionadoDTO(SERVICO_ID, List.of(itens))));
         }
 
+        /**
+         * `itensExtras` ausente precisa significar "nenhum item". Antes isso
+         * quebrava com NullPointerException — que virava 401 na resposta por
+         * causa do dispatch de erro, então parecia token expirado.
+         */
+        @Test
+        void deveCriarAtendimentoQuandoItensExtrasVemAusente() {
+                Servico servico = servico("150.00");
+
+                when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
+                                .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
+                when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico));
+                when(atendimentoRepository.save(any(Atendimento.class)))
+                                .thenAnswer(invocacao -> invocacao.getArgument(0));
+                when(atendimentoServicoRepository.save(any(AtendimentoServico.class)))
+                                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+                var requisicao = new CreateAtendimentoRequestDTO(
+                                CLIENTE_ID,
+                                LocalDateTime.now().plusDays(1),
+                                List.of(new ServicoSelecionadoDTO(SERVICO_ID, null)));
+
+                var resposta = atendimentoService.createAtendimento(CLINICA, requisicao);
+
+                assertThat(resposta.servicos()).hasSize(1);
+                assertThat(resposta.servicos().get(0).itensExtras()).isEmpty();
+                verify(itemRepository, never()).findByIdAndClinica(any(), any());
+        }
+
         // ---------- criação ----------
 
         @Test
@@ -148,7 +186,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty());
@@ -175,7 +212,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty())
@@ -223,7 +259,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.empty());
 
                 assertThatThrownBy(() -> atendimentoService.createAtendimento(CLINICA,
@@ -237,8 +272,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any()))
-                                .thenReturn(false, true);
 
                 CreateAtendimentoRequestDTO requisicao = new CreateAtendimentoRequestDTO(
                                 CLIENTE_ID,
@@ -258,7 +291,6 @@ class AtendimentoServiceTest {
                 when(clienteRepository.findByIdAndClinica(CLIENTE_ID, CLINICA))
                                 .thenReturn(Optional.of(cliente(CLIENTE_ID, "Maria")));
                 when(servicoRepository.findByIdAndClinica(SERVICO_ID, CLINICA)).thenReturn(Optional.of(servico("100.00")));
-                when(atendimentoServicoRepository.existsByAtendimentoAndServico(any(), any())).thenReturn(false);
                 when(itemRepository.findByIdAndClinica(ITEM_ID, CLINICA)).thenReturn(Optional.of(item));
                 when(atendimentoItemRepository.findByAtendimentoServicoAndItem(any(), any()))
                                 .thenReturn(Optional.empty());

@@ -17,6 +17,7 @@ import com.cliniva.item.dtos.ItemResponseDTO;
 import com.cliniva.item.dtos.MovimentacaoEstoqueRequestDTO;
 import com.cliniva.item.dtos.UpdateItemRequestDTO;
 import com.cliniva.tenancy.Clinica;
+import com.cliniva.tenancy.ClinicaRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class ItemService {
     private final ItemRepository itemRepository;
     private final AtendimentoItemRepository atendimentoItemRepository;
+    private final ClinicaRepository clinicaRepository;
 
     public CreateItemResponseDTO createItem(Clinica clinica, CreateItemRequestDTO requestDTO) {
         if (itemRepository.existsByNomeAndClinica(requestDTO.nome(), clinica)) {
@@ -68,6 +70,13 @@ public class ItemService {
 
     @Transactional
     public ItemResponseDTO movimentarEstoque(Clinica clinica, UUID id, MovimentacaoEstoqueRequestDTO requestDTO) {
+        // Lock por clínica: sem isso, duas movimentações simultâneas leem o mesmo
+        // saldo, alteram em memória e a última escrita perde a primeira
+        // (lost update). O CHECK de quantidade >= 0 protege contra saldo
+        // negativo, mas não contra update perdido.
+        clinicaRepository.findByIdParaUpdate(clinica.getId())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Clínica não encontrada"));
+
         Item item = itemRepository.findByIdAndClinica(id, clinica)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Item não encontrado"));
 

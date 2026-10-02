@@ -25,6 +25,7 @@ import com.cliniva.item.dtos.CreateItemRequestDTO;
 import com.cliniva.item.dtos.MovimentacaoEstoqueRequestDTO;
 import com.cliniva.item.dtos.UpdateItemRequestDTO;
 import com.cliniva.tenancy.Clinica;
+import com.cliniva.tenancy.ClinicaRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ItemServiceTest {
@@ -34,6 +35,9 @@ class ItemServiceTest {
 
     @Mock
     private AtendimentoItemRepository atendimentoItemRepository;
+
+    @Mock
+    private ClinicaRepository clinicaRepository;
 
     @InjectMocks
     private ItemService itemService;
@@ -97,6 +101,7 @@ class ItemServiceTest {
     void entradaDeveSomarAoEstoque() {
         UUID id = UUID.randomUUID();
         Item item = item(id, "Sérum Vitamina C", "10");
+        travaClinica();
         when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.of(item));
         when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
@@ -112,6 +117,7 @@ class ItemServiceTest {
     void saidaDeveSubtrairDoEstoque() {
         UUID id = UUID.randomUUID();
         Item item = item(id, "Sérum Vitamina C", "10");
+        travaClinica();
         when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.of(item));
         when(itemRepository.save(any(Item.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
@@ -126,12 +132,18 @@ class ItemServiceTest {
     @Test
     void movimentacaoDeItemInexistenteRetornaErro() {
         UUID id = UUID.randomUUID();
+        travaClinica();
         when(itemRepository.findByIdAndClinica(id, CLINICA)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> itemService.movimentarEstoque(CLINICA, id,
                 new MovimentacaoEstoqueRequestDTO(
                         MovimentacaoEstoqueRequestDTO.TipoMovimentacao.ENTRADA, BigDecimal.ONE)))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    /** A movimentação trava a clínica antes de mexer no saldo (evita lost update). */
+    private void travaClinica() {
+        when(clinicaRepository.findByIdParaUpdate(CLINICA.getId())).thenReturn(Optional.of(CLINICA));
     }
 
     @Test

@@ -15,6 +15,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
 
     Optional<Cliente> findByIdAndClinica(UUID id, Clinica clinica);
 
+    Optional<Cliente> findByTelefoneAndClinica(String telefone, Clinica clinica);
+
     boolean existsByIdAndClinica(UUID id, Clinica clinica);
 
     boolean existsByEmailAndClinica(String email, Clinica clinica);
@@ -36,6 +38,11 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
 
     @Query("SELECT c FROM Cliente c WHERE c.clinica = :clinica AND EXTRACT(MONTH FROM c.dataNascimento) = :mes")
     List<Cliente> findByDataNascimentoMesAndClinica(@Param("mes") int mes, @Param("clinica") Clinica clinica);
+
+    @Query("SELECT c FROM Cliente c WHERE c.clinica = :clinica "
+            + "AND EXTRACT(MONTH FROM c.dataNascimento) = :mes AND EXTRACT(DAY FROM c.dataNascimento) = :dia")
+    List<Cliente> findAniversariantesHojeByClinica(@Param("dia") int dia, @Param("mes") int mes,
+            @Param("clinica") Clinica clinica);
 
     @Query("SELECT c.clinica.id, COUNT(c) FROM Cliente c GROUP BY c.clinica.id")
     List<Object[]> contarPorClinica();

@@ -1,6 +1,7 @@
 package com.cliniva.atendimento.repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import com.cliniva.atendimento.enums.StatusAtendimento;
 import com.cliniva.atendimento.model.Atendimento;
 import com.cliniva.atendimento.model.AtendimentoServico;
 import com.cliniva.servico.Servico;
+import com.cliniva.tenancy.Clinica;
 
 public interface AtendimentoServicoRepository extends JpaRepository<AtendimentoServico, UUID> {
 
@@ -25,4 +27,12 @@ public interface AtendimentoServicoRepository extends JpaRepository<AtendimentoS
             + "FROM com.cliniva.atendimento.model.AtendimentoServico ats JOIN ats.atendimento a "
             + "WHERE a.status = :status GROUP BY ats.atendimento.clinica.id")
     List<Object[]> totalCobradoPorClinica(@Param("status") StatusAtendimento status);
+
+    @Query("SELECT COALESCE(SUM(ats.valorCobrado), 0) "
+            + "FROM com.cliniva.atendimento.model.AtendimentoServico ats JOIN ats.atendimento a "
+            + "WHERE a.clinica = :clinica AND a.status = :status "
+            + "AND a.dataAtendimento >= :inicio AND a.dataAtendimento <= :fim")
+    BigDecimal somarValorCobradoPorStatusEPeriodo(Clinica clinica,
+            @Param("status") StatusAtendimento status,
+            @Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
 }

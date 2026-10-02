@@ -2,6 +2,7 @@ package com.cliniva.cliente;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -15,6 +16,7 @@ import com.cliniva.atendimento.dtos.AtendimentoResponseDTO;
 import com.cliniva.atendimento.enums.StatusAtendimento;
 import com.cliniva.atendimento.model.Atendimento;
 import com.cliniva.atendimento.repository.AtendimentoRepository;
+import com.cliniva.common.Normalizador;
 import com.cliniva.cliente.dtos.ClienteHistoricoResponseDTO;
 import com.cliniva.cliente.dtos.ClienteResponseDTO;
 import com.cliniva.cliente.dtos.CreateClienteNotaRequestDTO;
@@ -38,20 +40,28 @@ public class ClienteService {
     private final ClienteNotaRepository clienteNotaRepository;
     private final AtendimentoRepository atendimentoRepository;
     private final AtendimentoService atendimentoService;
+    private final Clock clock;
 
+    @Transactional
     public CreateClienteResponseDTO createCliente(Clinica clinica, CreateClienteRequestDTO createClienteDTO) {
-        if (clienteRepository.existsByEmailAndClinica(createClienteDTO.email(), clinica)) {
+        // Normaliza antes de checar e antes de gravar: o índice único de
+        // e-mail é case-sensitive, então sem isso "Maria@X.com" e
+        // "maria@x.com" viravam duas clientes da mesma clínica.
+        String email = Normalizador.email(createClienteDTO.email());
+        String telefone = Normalizador.telefone(createClienteDTO.telefone());
+
+        if (email != null && clienteRepository.existsByEmailAndClinica(email, clinica)) {
             throw new RecursoDuplicadoException("Email já cadastrado");
         }
-        if (clienteRepository.existsByTelefoneAndClinica(createClienteDTO.telefone(), clinica)) {
+        if (clienteRepository.existsByTelefoneAndClinica(telefone, clinica)) {
             throw new RecursoDuplicadoException("Telefone já cadastrado");
         }
 
         Cliente cliente = new Cliente();
         cliente.setClinica(clinica);
         cliente.setNome(createClienteDTO.nome());
-        cliente.setEmail(createClienteDTO.email());
-        cliente.setTelefone(createClienteDTO.telefone());
+        cliente.setEmail(email);
+        cliente.setTelefone(telefone);
         cliente.setDataNascimento(createClienteDTO.dataNascimento());
         cliente.setOrigem(createClienteDTO.origem());
         cliente.setCanalPreferido(createClienteDTO.canalPreferido());
@@ -210,7 +220,7 @@ public class ClienteService {
 
     @Transactional(readOnly = true)
     public List<ClienteResponseDTO> aniversariantes(Clinica clinica, Integer mes) {
-        int mesConsulta = mes != null ? mes : LocalDate.now().getMonthValue();
+        int mesConsulta = mes != null ? mes : LocalDate.now(clock).getMonthValue();
         if (mesConsulta < 1 || mesConsulta > 12) {
             throw new IllegalArgumentException("Mês deve estar entre 1 e 12");
         }

@@ -29,6 +29,7 @@ import com.cliniva.cliente.ClienteRepository;
 import com.cliniva.exception.RecursoNaoEncontradoException;
 import com.cliniva.exception.SupabaseIndisponivelException;
 import com.cliniva.tenancy.Clinica;
+import com.cliniva.tenancy.ClinicaProvisioningService;
 import com.cliniva.tenancy.ClinicaRepository;
 import com.cliniva.tenancy.Papel;
 import com.cliniva.tenancy.SupabaseUsersService;
@@ -40,6 +41,8 @@ class AdminServiceTest {
 
     @Mock
     private ClinicaRepository clinicaRepository;
+    @Mock
+    private ClinicaProvisioningService clinicaProvisioning;
     @Mock
     private UsuarioRepository usuarioRepository;
     @Mock
@@ -63,13 +66,20 @@ class AdminServiceTest {
         return usuario;
     }
 
+    private Clinica clinicaPronta() {
+        Clinica clinica = new Clinica();
+        org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
+        clinica.setNome("Nova Clínica");
+        clinica.setSlug("nova-clinica");
+        return clinica;
+    }
+
     @Test
     void deveCriarClinicaComResponsavelSemSupabase() {
         when(clinicaRepository.existsByNome("Nova Clínica")).thenReturn(false);
         when(usuarioRepository.existsByEmail("dona@email.com")).thenReturn(false);
         when(supabaseUsers.configurada()).thenReturn(false);
-        when(clinicaRepository.save(any(Clinica.class)))
-                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(clinicaProvisioning.criarClinica("Nova Clínica")).thenReturn(clinicaPronta());
         when(usuarioRepository.save(any(Usuario.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
@@ -82,14 +92,28 @@ class AdminServiceTest {
     }
 
     @Test
+    void clinicaCriadaPeloAdminDeveTerSlugEExpediente() {
+        when(clinicaRepository.existsByNome("Nova Clínica")).thenReturn(false);
+        when(usuarioRepository.existsByEmail("dona@email.com")).thenReturn(false);
+        when(supabaseUsers.configurada()).thenReturn(false);
+        when(clinicaProvisioning.criarClinica("Nova Clínica")).thenReturn(clinicaPronta());
+        when(usuarioRepository.save(any(Usuario.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        adminService.criarClinica(new CriarClinicaRequestDTO("Nova Clínica", "dona@email.com", "Dona Maria"));
+
+        // slug público e expediente semeado vêm do provisionamento compartilhado
+        verify(clinicaProvisioning).criarClinica("Nova Clínica");
+    }
+
+    @Test
     void deveCriarClinicaCriandoUsuarioNoSupabase() {
         when(clinicaRepository.existsByNome("Nova Clínica")).thenReturn(false);
         when(usuarioRepository.existsByEmail("dona@email.com")).thenReturn(false);
         when(supabaseUsers.configurada()).thenReturn(true);
         when(supabaseUsers.criarUsuario(eq("dona@email.com"), anyString()))
                 .thenReturn(new SupabaseUsersService.UsuarioSupabase(UUID.randomUUID().toString(), "dona@email.com"));
-        when(clinicaRepository.save(any(Clinica.class)))
-                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(clinicaProvisioning.criarClinica("Nova Clínica")).thenReturn(clinicaPronta());
         when(usuarioRepository.save(any(Usuario.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 

@@ -29,6 +29,7 @@ import com.cliniva.exception.RecursoDuplicadoException;
 import com.cliniva.exception.RecursoNaoEncontradoException;
 import com.cliniva.exception.SupabaseIndisponivelException;
 import com.cliniva.tenancy.Clinica;
+import com.cliniva.tenancy.ClinicaProvisioningService;
 import com.cliniva.tenancy.ClinicaRepository;
 import com.cliniva.tenancy.Papel;
 import com.cliniva.tenancy.SupabaseUsersService;
@@ -42,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminService {
 
     private final ClinicaRepository clinicaRepository;
+    private final ClinicaProvisioningService clinicaProvisioning;
     private final UsuarioRepository usuarioRepository;
     private final ClienteRepository clienteRepository;
     private final AtendimentoRepository atendimentoRepository;
@@ -67,9 +69,8 @@ public class AdminService {
             throw new RecursoDuplicadoException("E-mail já cadastrado");
         }
 
-        Clinica clinica = new Clinica();
-        clinica.setNome(nome);
-        clinicaRepository.save(clinica);
+        // Slug público + expediente padrão vêm garantidos pelo provisionamento.
+        Clinica clinica = clinicaProvisioning.criarClinica(nome);
 
         NovoResponsavel responsavel = novoResponsavel(email, request.nomeResponsavel().trim(), clinica);
         usuarioRepository.save(responsavel.usuario());

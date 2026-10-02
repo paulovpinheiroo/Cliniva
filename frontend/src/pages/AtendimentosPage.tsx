@@ -477,13 +477,16 @@ export function AtendimentosPage() {
         title={acaoConcluindo ? 'Concluir atendimento' : 'Cancelar atendimento'}
         message={acaoMensagem}
         confirmLabel={acaoConcluindo ? 'Concluir' : 'Cancelar atendimento'}
+        error={acaoErro}
+        pending={salvando}
+        pendingLabel={acaoConcluindo ? 'Concluindo...' : 'Cancelando...'}
         onConfirm={confirmarAcao}
         onCancel={() => {
+          if (salvando) return
           setAcaoStatus(null)
           setAcaoErro('')
         }}
       />
-      {acaoErro && <ErrorBanner message={acaoErro} />}
     </>
   )
 }

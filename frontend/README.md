@@ -52,7 +52,7 @@ nos requests; administradores em modo suporte enviam o header
 ```
 src/
 ├── main.tsx                   Bootstrap (ReactDOM + BrowserRouter + AuthProvider)
-├── App.tsx                    Rotas (públicas /login /cadastro + protegidas em <AppLayout/>)
+├── App.tsx                    Rotas (landing, /login, /cadastro, /agendar/:slug + protegidas em <AppLayout/>)
 ├── index.css                  Tokens de tema, tipografia, animações
 ├── pages/                     Uma pasta/tela por rota
 │   ├── LoginPage.tsx          Login (e-mail + senha)
@@ -63,7 +63,9 @@ src/
 │   ├── ClientesPage.tsx       Lista + CRUD de clientes
 │   ├── ServicosPage.tsx       Catálogo + CRUD de serviços
 │   ├── EstoquePage.tsx        Itens + movimentação de estoque
-│   └── AtendimentosPage.tsx   Agenda + serviços extras + status
+│   ├── AgendaPage.tsx         Agenda do dia: grade, criar, remarcar, status, expediente
+│   ├── AtendimentosPage.tsx   Histórico/lista de atendimentos com filtros
+│   └── BookingPage.tsx        Booking público (rota /agendar/:slug, sem auth)
 ├── components/
 │   ├── auth/                  RequerAuth, RequerAdmin, AuthShell
 │   ├── layout/AppLayout.tsx   Rail carbon fixa + conteúdo (ivory)
@@ -76,7 +78,7 @@ src/
 │   ├── http.ts                Wrapper fetch + ApiError + Bearer/X-Clinica
 │   └── *Api.ts                Um módulo por domínio (tipado)
 ├── hooks/
-│   ├── useApi.ts              Estado data/loading/error + refetch
+│   ├── useApi.ts              Estado data/loading/error + refetch, com proteção contra respostas fora de ordem
 │   ├── useAuth.tsx            AuthProvider + useAuth (sessão do Supabase)
 │   └── useTheme.ts            Tema claro/escuro (persiste em localStorage)
 ├── lib/
@@ -157,8 +159,15 @@ Movimento **sóbrio**, sem dependências:
 - **`/clientes/:id`** — ficha do cliente: perfil, financeiro (gasto total,
   ticket médio, última visita), histórico de atendimentos, anotações
   (adicionar/excluir) e follow-up via `wa.me`.
-- **`/servicos`**, **`/estoque`**, **`/atendimentos`** — CRUDs + agenda.
-  Atendimentos agendados têm link **Lembrar** (WhatsApp pré-preenchido).
+- **`/agenda`** — agenda do dia: navegação por data, grade com início/fim e
+  total, criar (com busca de horários livres), remarcar, concluir, cancelar,
+  configurar o **expediente** e copiar o **link público** da clínica.
+- **`/agendar/:slug`** *(público, sem login)* — página de booking: escolhe
+  serviço, dia e horário livre e agenda sem cadastro (o cliente é criado a
+  partir do telefone, com origem `Online`).
+- **`/servicos`**, **`/estoque`**, **`/atendimentos`** — CRUDs e lista
+  histórica de atendimentos. Atendimentos `AGENDADO` têm link **Lembrar**
+  (WhatsApp pré-preenchido).
 
 ## Como adicionar uma página/rota
 

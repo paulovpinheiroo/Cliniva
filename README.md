@@ -107,6 +107,31 @@ clínica em `/cadastro` (auto-registro) ou use a conta admin master.
 Detalhes completos (estrutura, tema, animações, como criar páginas):
 [`frontend/README.md`](frontend/README.md).
 
+### 4.5. Alternativa: tudo em containers (Docker Compose)
+
+Sobe o Postgres local (as migrations de `supabase/migrations/` são aplicadas
+automaticamente na primeira subida), o backend e o frontend:
+
+```bash
+docker compose up -d --build   # db :5433, api :8080, ui :5173
+docker compose stop            # pausa sem perder os dados
+docker compose down            # remove os containers (os dados ficam no volume)
+```
+
+A porta `5433` do Postgres do compose evita conflito com um Postgres já rodando
+no host (5432).
+
+Requisitos: `backend/.env.local` e `frontend/.env` preenchidos — o login/auth
+continuam usando o Supabase remoto, só o banco de dados é local. Para o código
+ser reavaliado depois de mudanças, use `docker compose up -d --build` de novo.
+
+> Com LLM no resumo do dia: exporte `LLM_PROVIDER` e `LLM_GEMINI_API_KEY`
+> (ou `LLM_GROQ_API_KEY`) no serviço `backend` do `docker-compose.yml`.
+
+Fazendo login com uma conta já vinculada a uma clínica no banco remoto, o
+primeiro acesso cria a clínica local via onboarding (`/cadastro`); a conta
+**ADMIN master** (seed da migration `03`) funciona sempre em `/admin`.
+
 ### 5. Variáveis de ambiente do backend
 
 | Variável | Uso |
@@ -116,6 +141,17 @@ Detalhes completos (estrutura, tema, animações, como criar páginas):
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (criar usuários/reset de senha) |
 | `SUPABASE_JWT_SECRET` | Segredo do JWT (fallback HS256) |
 | `CLINIVA_CORS_ORIGIN` | Origem permitida no CORS (default `http://localhost:5173`) |
+| `LLM_PROVIDER` | `gemini` ou `groq`. **Vazio = nenhuma chamada externa** (resumo por template) |
+| `LLM_GEMINI_API_KEY` | Chave da API Gemini (só se `LLM_PROVIDER=gemini`) |
+| `LLM_GEMINI_MODEL` | Default `gemini-3.5-flash-lite` |
+| `LLM_GROQ_API_KEY` | Chave da API Groq (só se `LLM_PROVIDER=groq`) |
+| `LLM_GROQ_MODEL` | Default `openai/gpt-oss-20b` |
+
+> Os defaults de modelo são conferidos contra a documentação oficial dos
+> providers. Se trocar, confira a lista atual antes: um nome de modelo
+> inválido faz **toda** chamada falhar, e o resumo cai no template sem
+> erro visível na tela — [Gemini](https://ai.google.dev/gemini-api/docs/models) ·
+> [Groq](https://console.groq.com/docs/models).
 
 ## API — visão geral
 
@@ -123,13 +159,28 @@ Detalhes completos (estrutura, tema, animações, como criar páginas):
 |---------|-----------|
 | Clientes | `GET/POST /api/clientes` · `GET/PUT/DELETE /api/clientes/{id}` · busca por `?nome=`, `?status=` |
 | Cliente · CRM | `GET /api/clientes/{id}/historico` · `GET/POST /api/clientes/{id}/notas` · `DELETE /api/clientes/{id}/notas/{notaId}` · `GET /api/clientes/aniversariantes?mes=` |
-| Serviços | `GET/POST /api/servicos` · `GET/PUT/DELETE /api/servicos/{id}` |
+| Serviços | `GET/POST /api/servicos` · `GET/PUT/DELETE /api/servicos/{id}` (campo `duracaoMinutos`, 1–1440) |
 | Itens/Estoque | `GET/POST /api/items` · `GET/PUT/DELETE /api/items/{id}` · `PATCH /api/items/{id}/estoque` |
-| Atendimentos | `GET/POST /api/atendimentos` · `GET /api/atendimentos/{id}` · `PATCH /{id}/status` |
+| Atendimentos | `GET/POST /api/atendimentos` · `GET/PUT /api/atendimentos/{id}` · `PATCH /{id}/status` |
+| Agenda (autenticada) | `GET /api/agenda?data=` · `GET /api/agenda/link` · `GET /api/agenda/disponibilidade?data=&servicoId=` · `GET/PUT /api/agenda/horarios` |
+| Booking público | `GET /api/public/booking/{slug}/servicos` · `GET /api/public/booking/{slug}/disponibilidade?data=&servicoId=` · `POST /api/public/booking/{slug}` |
+| Resumo do dia | `GET /api/resumo-do-dia` (limite de 5 gerações/dia/clínica) |
 
 Filtros de atendimento: `?status=`, `?clienteId=`, `?dataInicio=`, `?dataFim=`.
 
-Erros seguem o formato `{"status", "mensagem", "erros"}` (400/401/403/404/409/503).
+### Agenda — regras
+
+- Todo agendamento (público ou interno) respeita o **expediente por clínica**
+  (`horario_atendimento`) e a **janela de 30 dias** (hoje … hoje+30).
+- Datas passadas são recusadas.
+- Sobreposição de horários é bloqueada sob **lock pessimista por clínica**
+  (`SELECT ... FOR UPDATE`); o banco também recusa estoque negativo.
+- A duração do atendimento é a **soma das durações dos serviços** (snapshot).
+- O booking público só funciona para clínicas **ativas** e tem **rate limit**
+  (5 tentativas por clínica+telefone+IP a cada 10 min).
+- O link público de uma clínica é `https://<frontend>/agendar/<slug>`.
+
+Erros seguem o formato `{"status", "mensagem", "erros"}` (400/401/403/404/409/429/503).
 
 ## Deploy (v0.3.0)
 
@@ -140,14 +191,29 @@ Erros seguem o formato `{"status", "mensagem", "erros"}` (400/401/403/404/409/50
    `supabase`) e a **Production branch = `production`**. Ao dar merge
    em `production`, a integração aplica `supabase/migrations/` no banco
    de produção automaticamente.
+   - ⚠️ Migrations são aplicadas **na ordem do timestamp** e **não devem ser
+     editadas depois de aplicadas**: corrija sempre criando a próxima.
+   - Banco novo por SQL manual: use `supabase/schema.sql` (schema
+     consolidado das migrations 01→06).
 3. Em **Project Settings → API** copie: URL do projeto, `anon key`,
    `service_role key` e **Project Settings → Database → Connection URI`.
 4. Driver JDBC: `jdbc:postgresql://db.<ref>.supabase.co:5432/postgres?sslmode=require`
    (usuário `postgres` e a senha do banco).
 
-> **Ordem recomendada no deploy:** primeiro dê merge em `production`
-> (aplica as migrations), depois o deploy da app na `main` — o backend
-> sobe com `ddl-auto=validate` e exige o schema já existente.
+> **Ordem obrigatória no deploy:** primeiro dê merge em `production`
+> (aplica as migrations), **depois** o merge em `main` — o backend sobe com
+> `ddl-auto=validate` e exige o schema já existente. Inverter a ordem derruba
+> o backend.
+>
+> **Docker Compose com banco já existente:** as migrations só rodam com o
+> volume vazio. Para um ambiente já iniciado, aplique na mão:
+>
+> ```bash
+> docker compose exec -T db psql -U postgres -d cliniva \
+>   < supabase/migrations/20260909000006_agenda_hardening.sql
+> # ou recrie do zero (APAGA OS DADOS):
+> docker compose down -v && docker compose up -d
+> ```
 
 ### Backend (Render)
 
@@ -181,6 +247,12 @@ Secrets preenchidos no painel do serviço (Environment), **fora do git**:
 
 Health check: `GET https://cliniva-hrpj.onrender.com/actuator/health`.
 
+> ⚠️ O serviço no painel do Render se chama `cliniva-backend` (ver
+> `render.yaml`), mas a URL é `cliniva-hrpj.onrender.com`. São nomes
+> diferentes — não conclua que o deploy falhou só porque não batem.
+> O que vale é o **log do deploy**: se o processo morre, o Render continua
+> servindo o container antigo e o health check continua respondendo 200.
+
 ### Frontend (Vercel)
 
 1. Importe o repositório na Vercel (framework detectado: Vite), `dist` de saída.
@@ -188,6 +260,16 @@ Health check: `GET https://cliniva-hrpj.onrender.com/actuator/health`.
 3. Adicione o domínio da Vercel em `CLINIVA_CORS_ORIGIN` do backend.
 
 O arquivo `vercel.json` faz o rewrite SPA para `index.html`.
+
+**Domínio de produção:** `https://cliniva-wheat.vercel.app`
+
+> ⚠️ Esse é o domínio real do projeto. O `cliniva.vercel.app` é um domínio
+> antigo/orfão, servido por um projeto Vercel anterior — ele **não** recebe
+> deploy e continua servindo um bundle antigo. Ao validar a agenda em
+> produção, use sempre `cliniva-wheat.vercel.app`.
+
+Link público de booking de uma clínica:
+`https://cliniva-wheat.vercel.app/agendar/<slug>`.
 
 ### CI
 
@@ -197,13 +279,35 @@ da Vercel — nenhum segredo de deploy é necessário no GitHub.
 
 ## Status
 
-🚀 **v0.3.0** — Auth, multi-tenant e administração: autenticação via
-Supabase (JWKS), isolamento de dados por clínica, painel admin com modo
-suporte e deploy em nuvem.
+🚀 **v0.4.0** — Agenda: expediente por clínica, duração de serviço com
+snapshot no atendimento, validação de conflitos, agenda interna e booking
+público por link.
+
+### v0.4.0 · Agenda
+
+- **Expediente por clínica** (dia da semana + abertura/fechamento), editável
+  em `/agenda`; padrão seg–sáb 08:00–18:00 semeado em toda clínica nova.
+- **Duração de serviço** (1–1440 min) propagada como snapshot no atendimento;
+  o fim do atendimento é exibido na grade.
+- **Validação de conflito** sob lock pessimista por clínica: dois
+  agendamentos simultâneos no mesmo horário não passam. O banco também recusa
+  estoque negativo.
+- **Janela única** para os dois fluxos: só entre hoje e hoje+30, nunca no
+  passado, sempre dentro do expediente.
+- **Agenda interna** (`/agenda`): grade diária, criar, remarcar, concluir,
+  cancelar, configurar expediente e copiar o link público.
+- **Booking público** (`/agendar/<slug>`): sem login, escolhe serviço/dia/
+  horário, cria ou reutiliza o cliente pelo telefone, origem `ONLINE`.
+  clinics inativas saem do ar; rate limit por clínica+telefone+IP.
+- **Provisioning único de clínica**: onboarding e painel admin geram slug
+  público e expediente do mesmo jeito (antes o admin deixava a clínica sem
+  link funcional).
+- **168 testes backend verdes.**
 
 ### v0.3.0 · Auth, Admin & Deploy
 
 - **Autenticação JWT** validada no backend via JWKS do Supabase
+  (o ADMIN master do seed é vinculado pelo e-mail no primeiro login)
   (`/api/public` aberto, `/api/**` autenticado, `/api/admin/**` somente ADMIN).
 - **Multi-tenant por clínica**: todos os recursos escopados pelo dono; o
   ADMIN acessa qualquer clínica em **modo suporte** (header `X-Clinica`).
@@ -251,7 +355,7 @@ suporte e deploy em nuvem.
 
 - [x] Autenticação/login via Supabase (JWT validado via JWKS)
 - [x] Multi-tenant por clínica + painel admin com modo suporte
-- [x] Deploy backend (Fly.io) + frontend (Vercel) + banco (Supabase)
+- [x] Deploy backend (Render) + frontend (Vercel) + banco (Supabase)
 
 ### MVP Backend ✅
 
@@ -281,8 +385,9 @@ suporte e deploy em nuvem.
 ### Deploy
 
 - [x] Auth/login (Supabase)
-- [x] Hospedagem: backend Fly.io + frontend Vercel + banco Supabase
+- [x] Hospedagem: backend Render + frontend Vercel + banco Supabase
 - [x] Deploy backend + banco na nuvem
+- [x] Agenda por clínica + booking público (v0.4.0)
 - [ ] PWA / instalação em home screen
 
 ## Ideias futuras (fora do escopo do MVP)

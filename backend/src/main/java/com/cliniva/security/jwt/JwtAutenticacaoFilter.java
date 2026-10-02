@@ -2,6 +2,7 @@ package com.cliniva.security.jwt;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,7 +21,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAutenticacaoFilter extends OncePerRequestFilter {
@@ -37,17 +40,45 @@ public class JwtAutenticacaoFilter extends OncePerRequestFilter {
             String token = cabecalho.substring(7);
             try {
                 Claims claims = verificador.verificar(token);
-                usuarioRepository.findBySupabaseUserId(claims.getSubject()).ifPresent(usuario -> {
-                    if (autenticavel(usuario)) {
-                        autenticar(usuario, token);
-                    }
-                });
+                Optional<Usuario> usuario = localizarUsuario(claims);
+                if (usuario.isPresent() && autenticavel(usuario.get())) {
+                    autenticar(usuario.get(), token);
+                }
             } catch (RuntimeException ex) {
+                // Token inválido é esperado (expirado, assinatura diferente),
+                // então não polui o log com stack trace. Erros inesperados
+                // ficam em debug para diagnóstico.
+                log.debug("Token recusado na autenticação: {}", ex.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Resolve o usuário pelo id do Supabase (subject). Se ainda não houver
+     * vínculo — caso do ADMIN master criado pelo seed da migration 03, cujo
+     * supabase_user_id nasce nulo —, vincula pelo e-mail do próprio JWT
+     * verificado. Isso só ocorre para e-mails já cadastrados no banco.
+     */
+    private Optional<Usuario> localizarUsuario(Claims claims) {
+        Optional<Usuario> porSupabaseId = usuarioRepository.findBySupabaseUserId(claims.getSubject());
+        if (porSupabaseId.isPresent()) {
+            return porSupabaseId;
+        }
+        String email = claims.get("email", String.class);
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        Optional<Usuario> porEmail = usuarioRepository.findByEmailIgnoreCase(email);
+        porEmail.ifPresent(usuario -> {
+            if (usuario.getSupabaseUserId() == null) {
+                usuario.setSupabaseUserId(claims.getSubject());
+                usuarioRepository.save(usuario);
+            }
+        });
+        return porEmail;
     }
 
     private boolean autenticavel(Usuario usuario) {

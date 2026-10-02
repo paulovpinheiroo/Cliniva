@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.cliniva.atendimento.AtendimentoService;
@@ -41,6 +44,9 @@ import com.cliniva.tenancy.Clinica;
 
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
+
+    @Spy
+    private final Clock clock = Clock.system(ZoneId.of("America/Sao_Paulo"));
 
     @Mock
     private ClienteRepository clienteRepository;
@@ -63,6 +69,23 @@ class ClienteServiceTest {
 
     private static final Clinica CLINICA_B = clinica("Clínica B");
 
+    @Test
+    void deveNormalizarEmailETelefoneAntesDeGravar() {
+        when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("5511999990000", CLINICA)).thenReturn(false);
+        when(clienteRepository.save(any(Cliente.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        clienteService.createCliente(CLINICA,
+                new CreateClienteRequestDTO("Maria", "  Maria@Email.COM ", "(11) 99999-0000",
+                        null, null, null, null, null));
+
+        ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
+        verify(clienteRepository).save(captor.capture());
+        assertThat(captor.getValue().getEmail()).isEqualTo("maria@email.com");
+        assertThat(captor.getValue().getTelefone()).isEqualTo("5511999990000");
+    }
+
     private static Clinica clinica(String nome) {
         Clinica clinica = new Clinica();
         org.springframework.test.util.ReflectionTestUtils.setField(clinica, "id", UUID.randomUUID());
@@ -83,11 +106,11 @@ class ClienteServiceTest {
     }
 
     private CreateClienteRequestDTO requestCriacaoBasico() {
-        return new CreateClienteRequestDTO("Maria", "maria@email.com", "11999990000", null, null, null, null, null);
+        return new CreateClienteRequestDTO("Maria", "maria@email.com", "(11) 99999-0000", null, null, null, null, null);
     }
 
     private CreateClienteRequestDTO requestCriacaoCompleto() {
-        return new CreateClienteRequestDTO("Maria", "maria@email.com", "11999990000",
+        return new CreateClienteRequestDTO("Maria", "maria@email.com", "(11) 99999-0000",
                 LocalDate.of(1990, 5, 10), OrigemCliente.INSTAGRAM, CanalPreferido.WHATSAPP,
                 "Cabelo curto", "Alergia a amônia");
     }
@@ -115,7 +138,7 @@ class ClienteServiceTest {
     @Test
     void deveCriarClienteComDadosValidos() {
         when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
-        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("5511999990000", CLINICA)).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
@@ -123,13 +146,13 @@ class ClienteServiceTest {
 
         assertThat(resposta.nome()).isEqualTo("Maria");
         assertThat(resposta.email()).isEqualTo("maria@email.com");
-        assertThat(resposta.telefone()).isEqualTo("11999990000");
+        assertThat(resposta.telefone()).isEqualTo("5511999990000");
     }
 
     @Test
     void deveCriarClienteComPerfilCompletoEStatusProspect() {
         when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
-        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("5511999990000", CLINICA)).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
@@ -146,7 +169,7 @@ class ClienteServiceTest {
     @Test
     void deveSalvarClienteComStatusProspectPorPadrao() {
         when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
-        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("5511999990000", CLINICA)).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 
@@ -172,7 +195,7 @@ class ClienteServiceTest {
     @Test
     void naoDeveCriarClienteComTelefoneDuplicado() {
         when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
-        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(true);
+        when(clienteRepository.existsByTelefoneAndClinica("5511999990000", CLINICA)).thenReturn(true);
 
         assertThatThrownBy(() -> clienteService.createCliente(CLINICA, requestCriacaoBasico()))
                 .isInstanceOf(RecursoDuplicadoException.class)
@@ -183,8 +206,8 @@ class ClienteServiceTest {
     void devePermitirMesmoEmailEmClinicasDiferentes() {
         when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA)).thenReturn(false);
         when(clienteRepository.existsByEmailAndClinica("maria@email.com", CLINICA_B)).thenReturn(false);
-        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA)).thenReturn(false);
-        when(clienteRepository.existsByTelefoneAndClinica("11999990000", CLINICA_B)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("5511999990000", CLINICA)).thenReturn(false);
+        when(clienteRepository.existsByTelefoneAndClinica("5511999990000", CLINICA_B)).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class)))
                 .thenAnswer(invocacao -> invocacao.getArgument(0));
 

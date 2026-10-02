@@ -32,7 +32,10 @@ file_size_limit = "50MiB"
 enabled = true
 site_url = "http://localhost:5173"
 additional_redirect_urls = [
-  "https://cliniva.vercel.app",
+  # produção (domínio real do projeto Vercel "cliniva")
+  "https://cliniva-wheat.vercel.app",
+  # previews de PR (cliniva-git-<branch>-paulo-victor3.vercel.app)
+  "https://cliniva-git-*.vercel.app",
 ]
 jwt_expiry = 3600
 # Auto-cadastro liberado: a plataforma permite self-registration de usuário

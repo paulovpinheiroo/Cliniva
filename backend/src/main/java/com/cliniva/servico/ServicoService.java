@@ -33,9 +33,10 @@ public class ServicoService {
         servico.setNome(requestDTO.nome());
         servico.setDescricao(requestDTO.descricao());
         servico.setValor(requestDTO.valor());
+        servico.setDuracaoMinutos(requestDTO.duracaoMinutos());
         servicoRepository.save(servico);
         return new CreateServicoResponseDTO(servico.getId(), servico.getNome(), servico.getDescricao(),
-                servico.getValor());
+                servico.getValor(), servico.getDuracaoMinutos());
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +63,7 @@ public class ServicoService {
         servico.setNome(requestDTO.nome());
         servico.setDescricao(requestDTO.descricao());
         servico.setValor(requestDTO.valor());
+        servico.setDuracaoMinutos(requestDTO.duracaoMinutos());
 
         return toResponseDTO(servicoRepository.save(servico));
     }
@@ -79,7 +81,7 @@ public class ServicoService {
 
     private ServicoResponseDTO toResponseDTO(Servico servico) {
         return new ServicoResponseDTO(servico.getId(), servico.getNome(), servico.getDescricao(),
-                servico.getValor());
+                servico.getValor(), servico.getDuracaoMinutos());
     }
 
 }
