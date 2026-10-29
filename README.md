@@ -398,3 +398,8 @@ público por link.
 ## Modelagem
 
 ![alt text](EDR.png)
+## Licença
+
+Copyright (c) 2026 Paulo Victor Pinheiro. **Todos os direitos reservados.**
+O código está público apenas para visualização (portfólio); não é permitido
+usar, copiar, modificar ou distribuir sem autorização. Veja [LICENSE](LICENSE).
